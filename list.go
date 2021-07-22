@@ -2,6 +2,7 @@ package fp
 
 import (
 	"fmt"
+	"math"
 	"reflect"
 	"runtime"
 )
@@ -39,7 +40,9 @@ func Map(f func(interface{}) interface{}, slice interface{}) []interface{} {
 	return ys
 }
 
-func Filter(f func(interface{}) bool, slice interface{}) []interface{} {
+var Filter = Select
+
+func Select(f func(interface{}) bool, slice interface{}) []interface{} {
 	sv := reflect.ValueOf(slice)
 	mustBeSlice(sv)
 
@@ -53,7 +56,8 @@ func Filter(f func(interface{}) bool, slice interface{}) []interface{} {
 	return xs
 }
 
-func Reduce(initial interface{}, f func(r interface{}, element interface{}) interface{}, slice interface{}) interface{} {
+var Reduce = Fold
+func Fold(f func(r interface{}, element interface{}) interface{}, initial interface{}, slice interface{}) interface{} {
 	sv := reflect.ValueOf(slice)
 	mustBeSlice(sv)
 
@@ -93,6 +97,10 @@ func Range(nums ...int) []int {
 }
 
 func _Range(imin, imax, step int) []int {
+	if step == 0 {
+		msg := fmt.Sprintf("Range: Range specification in Range[%v,%v,%v] does not have appropriate bounds.", imin, imax, step)
+		panic(msg)
+	}
 	if imin > imax && step > 0 {
 		return []int{}
 	}
@@ -111,7 +119,7 @@ func _Range(imin, imax, step int) []int {
 	return rs
 }
 
-func Length(slice interface{}) interface{} {
+func Length(slice interface{}) int {
 	return reflect.ValueOf(slice).Len()
 }
 
@@ -135,3 +143,70 @@ func Last(slice interface{}) interface{} {
 	return sv.Index(sv.Len() - 1).Interface()
 }
 
+func Take(slice interface{}, n int) interface{} {
+	if Length(slice) == 0 || n == 0 {
+		msg := fmt.Sprintf("Take: %v has zero length and no first element.", slice)
+		panic(msg)
+	}
+	sv := reflect.ValueOf(slice)
+	mustBeSlice(sv)
+
+	if sv.Len() < int(math.Abs(float64(n))) {
+		var msg string
+		if n > 0 {
+			msg = fmt.Sprintf("Take: Cannot take positions 0 through %v", n-1)
+		} else {
+			msg = fmt.Sprintf("Take: Cannot take positions %v through -1", n)
+		}
+		panic(msg)
+	}
+
+	var ys = []interface{}{}
+	start, end := func() (int, int) {
+		if n > 0 {
+			return 0, n
+		} else {
+			return sv.Len() + n, sv.Len()
+		}
+	}()
+
+	for i := start; i < end; i++ {
+		x := sv.Index(i).Interface()
+		ys = append(ys, x)
+	}
+	return ys
+}
+
+func Drop(slice interface{}, n int) interface{} {
+	if Length(slice) < int(math.Abs(float64(n))) {
+		msg := fmt.Sprintf("Drop: %v has zero length and no first element.", slice)
+		panic(msg)
+	}
+	sv := reflect.ValueOf(slice)
+	mustBeSlice(sv)
+
+	if sv.Len() < int(math.Abs(float64(n))) {
+		var msg string
+		if n > 0 {
+			msg = fmt.Sprintf("Drop: Cannot drop positions 1 through %v", n-1)
+		} else {
+			msg = fmt.Sprintf("Drop: Cannot drop positions %v through -1", n)
+		}
+		panic(msg)
+	}
+
+	var ys = []interface{}{}
+	start, end := func() (int, int) {
+		if n > 0 {
+			return n, sv.Len()
+		} else {
+			return 0, sv.Len()+n
+		}
+	}()
+
+	for i := start; i < end; i++ {
+		x := sv.Index(i).Interface()
+		ys = append(ys, x)
+	}
+	return ys
+}
