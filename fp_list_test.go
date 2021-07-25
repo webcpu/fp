@@ -227,4 +227,41 @@ var _ = Describe("list", func() {
 			Expect(actual).To(Equal(expected))
 		})
 	})
+
+	Context("Position(expr)", func() {
+		It("gives a list of the positions at which objects matching pattern appear in expr.", func() {
+			xs := Range(0, 9)
+			actual := Position(xs, 2)
+			expected := [][]int{{2}}
+			Expect(actual).To(Equal(expected))
+		})
+
+		It("gives a list of the positions at which objects matching pattern appear in expr.", func() {
+			xs := [][]int{{0,1,2,3}}
+			actual := Position(xs, []int{0,1,2,3})
+			expected := [][]int{{0}}
+			Expect(actual).To(Equal(expected))
+		})
+
+		It("gives a list of the positions at which objects matching pattern appear in expr.", func() {
+			xs := [][]int{{0,1,2,3}}
+			actual := Position(xs, []int{0,1,2,5})
+			expected := [][]int{}
+			Expect(actual).To(Equal(expected))
+		})
+
+		It("gives a list of the positions at which objects matching pattern appear in expr.", func() {
+			xs := []string{"abc", "def"}
+			actual := Position(xs, "def")
+			expected := [][]int{{1}}
+			Expect(actual).To(Equal(expected))
+		})
+
+		It("gives a list of the positions at which objects matching pattern appear in expr.", func() {
+			xs := []string{"abc", "def"}
+			actual := Position(xs, "adc")
+			expected := [][]int{}
+			Expect(actual).To(Equal(expected))
+		})
+	})
 })

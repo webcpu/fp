@@ -210,3 +210,20 @@ func Drop(slice interface{}, n int) interface{} {
 	}
 	return ys
 }
+
+func Position(slice interface{}, pattern interface{}) [][]int {
+	sv := reflect.ValueOf(slice)
+	mustBeSlice(sv)
+
+	results := [][]int{}
+	for i := 0; i < sv.Len(); i++ {
+		x := sv.Index(i).Interface()
+		if reflect.DeepEqual(x, pattern) {
+			results = append(results, []int{i})
+		}
+	}
+	return results
+}
+
+
+
