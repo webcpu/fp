@@ -232,35 +232,86 @@ var _ = Describe("list", func() {
 		It("gives a list of the positions at which objects matching pattern appear in expr.", func() {
 			xs := Range(0, 9)
 			actual := Position(xs, 2)
-			expected := [][]int{{2}}
+			expected := [][]interface{}{{2}}
 			Expect(actual).To(Equal(expected))
 		})
 
 		It("gives a list of the positions at which objects matching pattern appear in expr.", func() {
 			xs := [][]int{{0,1,2,3}}
 			actual := Position(xs, []int{0,1,2,3})
-			expected := [][]int{{0}}
+			expected := [][]interface{}{{0}}
 			Expect(actual).To(Equal(expected))
 		})
 
 		It("gives a list of the positions at which objects matching pattern appear in expr.", func() {
 			xs := [][]int{{0,1,2,3}}
 			actual := Position(xs, []int{0,1,2,5})
-			expected := [][]int{}
+			expected := [][]interface{}{}
 			Expect(actual).To(Equal(expected))
 		})
 
 		It("gives a list of the positions at which objects matching pattern appear in expr.", func() {
 			xs := []string{"abc", "def"}
 			actual := Position(xs, "def")
-			expected := [][]int{{1}}
+			expected := [][]interface{}{{1}}
 			Expect(actual).To(Equal(expected))
 		})
 
 		It("gives a list of the positions at which objects matching pattern appear in expr.", func() {
 			xs := []string{"abc", "def"}
 			actual := Position(xs, "adc")
-			expected := [][]int{}
+			expected := [][]interface{}{}
+			Expect(actual).To(Equal(expected))
+		})
+
+		It("gives a list of the positions at which objects matching pattern appear in expr.", func() {
+			xs := map[int]string{1:"abc", 2:"def", 7: "def"}
+			actual := Position(xs, "def")
+			expected := [][]interface{}{{2}, {7}}
+			Expect(actual).To(Equal(expected))
+		})
+	})
+
+	Context("Count(expr)", func() {
+		It("gives the number of elements in list that match pattern.", func() {
+			xs := Range(0, 9)
+			actual := Count(xs, 2)
+			expected := 1
+			Expect(actual).To(Equal(expected))
+		})
+
+		It("gives the number of elements in list that match pattern.", func() {
+			xs := [][]int{{0,1,2,3}}
+			actual := Count(xs, []int{0,1,2,3})
+			expected := 1
+			Expect(actual).To(Equal(expected))
+		})
+
+		It("gives the number of elements in list that match pattern.", func() {
+			xs := [][]int{{0,1,2,3}}
+			actual := Count(xs, []int{0,1,2,5})
+			expected := 0
+			Expect(actual).To(Equal(expected))
+		})
+
+		It("gives the number of elements in list that match pattern.", func() {
+			xs := []string{"abc", "def"}
+			actual := Count(xs, "def")
+			expected := 1
+			Expect(actual).To(Equal(expected))
+		})
+
+		It("gives the number of elements in list that match pattern.", func() {
+			xs := []string{"abc", "def"}
+			actual := Count(xs, "adc")
+			expected := 0
+			Expect(actual).To(Equal(expected))
+		})
+
+		It("gives the number of elements in list that match pattern.", func() {
+			xs := map[int]string{1:"abc", 2:"def", 7: "def"}
+			actual := Count(xs, "def")
+			expected := 2
 			Expect(actual).To(Equal(expected))
 		})
 	})

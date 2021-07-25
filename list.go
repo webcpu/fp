@@ -7,13 +7,48 @@ import (
 	"runtime"
 )
 
-func mustBeSlice(v reflect.Value) {
+func isMap(v reflect.Value) bool {
+	return typeQ(v, reflect.Map)
+}
+
+func isSlice(v reflect.Value) bool {
+	return typeQ(v, reflect.Slice)
+}
+
+func typeQ(v reflect.Value, t reflect.Kind) bool {
 	pc, _, _, ok := runtime.Caller(1)
 	details := runtime.FuncForPC(pc)
 	if ok && details != nil {
-		if v.Kind() != reflect.Slice {
+		return v.Kind() == t
+	}
+	return false
+}
+
+func mustBeMap(v reflect.Value) {
+	mustBe(v, reflect.Map)
+}
+
+func mustBeSlice(v reflect.Value) {
+	mustBe(v, reflect.Slice)
+}
+
+func mustBe(v reflect.Value, kind reflect.Kind) {
+	pc, _, _, ok := runtime.Caller(1)
+	details := runtime.FuncForPC(pc)
+	if ok && details != nil {
+		if v.Kind() != kind {
 			panic(&reflect.ValueError{details.Name(), v.Kind()})
 		}
+	}
+}
+
+func panicTypeError(v reflect.Value) {
+	pc, _, _, ok := runtime.Caller(1)
+	details := runtime.FuncForPC(pc)
+	if ok && details != nil {
+		panic(&reflect.ValueError{details.Name(), v.Kind()})
+	} else {
+		panic(&reflect.ValueError{"type error", v.Kind()})
 	}
 }
 
@@ -211,18 +246,77 @@ func Drop(slice interface{}, n int) interface{} {
 	return ys
 }
 
-func Position(slice interface{}, pattern interface{}) [][]int {
-	sv := reflect.ValueOf(slice)
-	mustBeSlice(sv)
 
-	results := [][]int{}
+func Position(expr interface{}, pattern interface{}) [][]interface{} {
+	v := reflect.ValueOf(expr)
+	switch v.Kind() {
+	case reflect.Slice:
+		return positionInSlice(v, pattern)
+	case reflect.Map:
+		return positionInMap(v, pattern)
+	default:
+		panicTypeError(v)
+	}
+	return [][]interface{}{}
+}
+
+func positionInSlice(sv reflect.Value, pattern interface{}) [][]interface{} {
+	results := [][]interface{}{}
 	for i := 0; i < sv.Len(); i++ {
 		x := sv.Index(i).Interface()
 		if reflect.DeepEqual(x, pattern) {
-			results = append(results, []int{i})
+			results = append(results, []interface{}{i})
 		}
 	}
 	return results
+}
+
+func positionInMap(sv reflect.Value, pattern interface{}) [][]interface{} {
+	results := [][]interface{}{}
+	keys := sv.MapKeys()
+	for i := 0; i < sv.Len(); i++ {
+		key := keys[i]
+		if reflect.DeepEqual(sv.MapIndex(key).Interface(), pattern) {
+			results = append(results, []interface{}{key.Interface()})
+		}
+	}
+	return results
+}
+
+func Count(expr interface{}, pattern interface{}) int {
+	v := reflect.ValueOf(expr)
+	switch v.Kind() {
+	case reflect.Slice:
+		return countInSlice(v, pattern)
+	case reflect.Map:
+		return countInMap(v, pattern)
+	default:
+		panicTypeError(v)
+	}
+	return 0
+}
+
+func countInSlice(sv reflect.Value, pattern interface{}) int {
+	count := 0
+	for i := 0; i < sv.Len(); i++ {
+		x := sv.Index(i).Interface()
+		if reflect.DeepEqual(x, pattern) {
+			count ++
+		}
+	}
+	return count
+}
+
+func countInMap(sv reflect.Value, pattern interface{}) int {
+	count := 0
+	keys := sv.MapKeys()
+	for i := 0; i < sv.Len(); i++ {
+		key := keys[i]
+		if reflect.DeepEqual(sv.MapIndex(key).Interface(), pattern) {
+			count++
+		}
+	}
+	return count
 }
 
 
