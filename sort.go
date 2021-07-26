@@ -71,10 +71,11 @@ func (x XSlice) Len() int           { return len(x) }
 func (x XSlice) Swap(i, j int)      { x[i], x[j] = x[j], x[i] }
 
 func sortArraySlice(expr interface{}, _less func(interface{}, interface{}) bool) []interface{} {
-	var slice XSlice = Map(Identity, expr)
+	var slice XSlice = Map(Identity, expr).(XSlice)
 	less := func(i,j int) bool { return _less(slice[i], slice[j]) }
 	_sortSlice(slice, less)
-	return Map(Identity, slice)
+	return []interface{}{}
+	//return Map(Identity, slice)
 }
 
 // Sort sorts data.

@@ -48,6 +48,13 @@ func mustBe(v reflect.Value, kind reflect.Kind) {
 	}
 }
 
+func mustBeFuncSignature(sv reflect.Value, fv reflect.Value, types ...reflect.Type) {
+	if !verifyFuncSignature(fv, types...) {
+		msg := "Map : function signature must be func(" + sv.Type().Elem().String() + ") OutputElementType"
+		panic(msg)
+	}
+}
+
 func panicTypeError(v reflect.Value) {
 	pc, _, _, ok := runtime.Caller(1)
 	details := runtime.FuncForPC(pc)
@@ -58,61 +65,91 @@ func panicTypeError(v reflect.Value) {
 	}
 }
 
-func Map(f func(interface{}) interface{}, slice interface{}) []interface{} {
+func verifyFuncSignature(fv reflect.Value, types ...reflect.Type) bool {
+	mustBe(fv, reflect.Func)
+	if (fv.Type().NumIn() != len(types) - 1) || fv.Type().NumOut() != 1 {
+		return false
+	}
+
+	for i := 0; i < len(types)-1; i++ {
+		if fv.Type().In(i) != types[i] {
+			return false
+		}
+	}
+
+	outType := types[len(types)-1]
+	return outType == nil || fv.Type().Out(0) == outType
+}
+
+func Map(f interface{}, slice interface{}) interface{} {
 	sv := reflect.ValueOf(slice)
+	fv := reflect.ValueOf(f)
+	mustBe(fv, reflect.Func)
 	mustBeArraySlice(sv)
 
-	var ys = make([]interface{}, sv.Len())
-	//if sv.Len() > 0 {
-	//	x := sv.Index(0).Interface()
-	//	y := f(x)
-	//	//kind := reflect.ValueOf(y).Kind()
-	//	t := reflect.TypeOf(y)
-	//	zs := reflect.MakeSlice(reflect.SliceOf(t), 0, sv.Len())//.([]interface{})
-	//	zs = reflect.Append(zs, reflect.ValueOf(y))
-	//	fmt.Println(reflect.TypeOf(zs))
-	//	fmt.Println(zs)
-	//}
+	elementType := sv.Type().Elem()
+	mustBeFuncSignature(sv, fv, elementType, nil)
+
+	ys := reflect.MakeSlice(reflect.SliceOf(fv.Type().Out(0)), sv.Len(), sv.Len())
 	for i := 0; i < sv.Len(); i++ {
-		x := sv.Index(i).Interface()
-		//y := f(x)
-		ys[i] = f(x)
+		x := []reflect.Value{sv.Index(i)}
+		ys.Index(i).Set(fv.Call(x)[0])
 	}
-	return ys
+	return ys.Interface()
 }
 
 var Filter = Select
 
-func Select(f func(interface{}) bool, slice interface{}) []interface{} {
+func Select(f interface{}, slice interface{}) interface{} {
 	sv := reflect.ValueOf(slice)
+	fv := reflect.ValueOf(f)
+	mustBe(fv, reflect.Func)
 	mustBeArraySlice(sv)
 
-	var xs = []interface{}{}
+	elementType := sv.Type().Elem()
+	mustBeFuncSignature(sv, fv, elementType, reflect.ValueOf(true).Type())
+
+	var ys = []interface{}{}
 	for i := 0; i < sv.Len(); i++ {
-		x := sv.Index(i).Interface()
-		if f(x) {
-			xs = append(xs, x)
+		x := sv.Index(i)
+		args := []reflect.Value{x}
+		if fv.Call(args)[0].Interface().(bool) {
+			ys = append(ys, x.Interface())
 		}
 	}
-	return xs
+
+	zs := reflect.MakeSlice(reflect.SliceOf(elementType), len(ys), len(ys))
+	for i := 0; i < zs.Len(); i++ {
+		zs.Index(i).Set(reflect.ValueOf(ys[i]))
+	}
+	return zs.Interface()
 }
 
 var Reduce = Fold
-func Fold(f func(r interface{}, element interface{}) interface{}, initial interface{}, slice interface{}) interface{} {
+func Fold(f interface{}, initial interface{}, slice interface{}) interface{} {
 	sv := reflect.ValueOf(slice)
+	fv := reflect.ValueOf(f)
+	mustBe(fv, reflect.Func)
 	mustBeArraySlice(sv)
 
-	var result = initial
+	elementType := sv.Type().Elem()
+	resultType := reflect.ValueOf(initial).Type()
+	mustBeFuncSignature(sv, fv, resultType, elementType, resultType)
+
+	var result = reflect.ValueOf(initial)
+	var ins[2]reflect.Value
+	ins[0] = result
 	for i := 0; i < sv.Len(); i++ {
-		x := sv.Index(i).Interface()
-		result = f(result, x)
+		ins[1] = sv.Index(i)
+		result = fv.Call(ins[:])[0]
+		ins[0] = result
 	}
-	return result
+	return result.Interface()
 }
 
 func MapIndexed(f func(interface{}, interface{}) interface{}, slice interface{}) []interface{}{
 	var xs = Map(Identity, slice)
-	var rs []interface{} = make([]interface{}, len(xs))
+	var rs []interface{} = make([]interface{}, Length(xs))
 	for index, x := range(xs) {
 		rs[index] = f(x, index)
 	}
