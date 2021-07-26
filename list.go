@@ -28,8 +28,14 @@ func mustBeMap(v reflect.Value) {
 	mustBe(v, reflect.Map)
 }
 
-func mustBeSlice(v reflect.Value) {
-	mustBe(v, reflect.Slice)
+func mustBeArraySlice(v reflect.Value) {
+	pc, _, _, ok := runtime.Caller(1)
+	details := runtime.FuncForPC(pc)
+	if ok && details != nil {
+		if !(v.Kind() == reflect.Array || v.Kind() == reflect.Slice)  {
+			panic(&reflect.ValueError{details.Name(), v.Kind()})
+		}
+	}
 }
 
 func mustBe(v reflect.Value, kind reflect.Kind) {
@@ -54,7 +60,7 @@ func panicTypeError(v reflect.Value) {
 
 func Map(f func(interface{}) interface{}, slice interface{}) []interface{} {
 	sv := reflect.ValueOf(slice)
-	mustBeSlice(sv)
+	mustBeArraySlice(sv)
 
 	var ys = make([]interface{}, sv.Len())
 	//if sv.Len() > 0 {
@@ -79,7 +85,7 @@ var Filter = Select
 
 func Select(f func(interface{}) bool, slice interface{}) []interface{} {
 	sv := reflect.ValueOf(slice)
-	mustBeSlice(sv)
+	mustBeArraySlice(sv)
 
 	var xs = []interface{}{}
 	for i := 0; i < sv.Len(); i++ {
@@ -94,7 +100,7 @@ func Select(f func(interface{}) bool, slice interface{}) []interface{} {
 var Reduce = Fold
 func Fold(f func(r interface{}, element interface{}) interface{}, initial interface{}, slice interface{}) interface{} {
 	sv := reflect.ValueOf(slice)
-	mustBeSlice(sv)
+	mustBeArraySlice(sv)
 
 	var result = initial
 	for i := 0; i < sv.Len(); i++ {
@@ -164,7 +170,7 @@ func First(slice interface{}) interface{} {
 		panic(msg)
 	}
 	sv := reflect.ValueOf(slice)
-	mustBeSlice(sv)
+	mustBeArraySlice(sv)
 	return sv.Index(0).Interface()
 }
 
@@ -174,7 +180,7 @@ func Last(slice interface{}) interface{} {
 		panic(msg)
 	}
 	sv := reflect.ValueOf(slice)
-	mustBeSlice(sv)
+	mustBeArraySlice(sv)
 	return sv.Index(sv.Len() - 1).Interface()
 }
 
@@ -184,7 +190,7 @@ func Take(slice interface{}, n int) interface{} {
 		panic(msg)
 	}
 	sv := reflect.ValueOf(slice)
-	mustBeSlice(sv)
+	mustBeArraySlice(sv)
 
 	if sv.Len() < int(math.Abs(float64(n))) {
 		var msg string
@@ -218,7 +224,7 @@ func Drop(slice interface{}, n int) interface{} {
 		panic(msg)
 	}
 	sv := reflect.ValueOf(slice)
-	mustBeSlice(sv)
+	mustBeArraySlice(sv)
 
 	if sv.Len() < int(math.Abs(float64(n))) {
 		var msg string
@@ -250,7 +256,7 @@ func Drop(slice interface{}, n int) interface{} {
 func Position(expr interface{}, pattern interface{}) [][]interface{} {
 	v := reflect.ValueOf(expr)
 	switch v.Kind() {
-	case reflect.Slice:
+	case reflect.Array, reflect.Slice:
 		return positionInSlice(v, pattern)
 	case reflect.Map:
 		return positionInMap(v, pattern)
@@ -286,7 +292,7 @@ func positionInMap(sv reflect.Value, pattern interface{}) [][]interface{} {
 func Count(expr interface{}, pattern interface{}) int {
 	v := reflect.ValueOf(expr)
 	switch v.Kind() {
-	case reflect.Slice:
+	case reflect.Slice, reflect.Array:
 		return countInSlice(v, pattern)
 	case reflect.Map:
 		return countInMap(v, pattern)
@@ -301,7 +307,7 @@ func countInSlice(sv reflect.Value, pattern interface{}) int {
 	for i := 0; i < sv.Len(); i++ {
 		x := sv.Index(i).Interface()
 		if reflect.DeepEqual(x, pattern) {
-			count ++
+			count++
 		}
 	}
 	return count
@@ -319,5 +325,158 @@ func countInMap(sv reflect.Value, pattern interface{}) int {
 	return count
 }
 
+func Reverse(expr interface{}) []interface{} {
+	v := reflect.ValueOf(expr)
+	mustBeArraySlice(v)
+
+	var xs = make([]interface{}, v.Len())
+	for i, j := 0, len(xs)-1; i <= j; i, j = i+1, j-1 {
+		xs[i], xs[j] = v.Index(j).Interface(), v.Index(i).Interface()
+	}
+	return xs
+}
+
+func Max(args ...interface{}) interface{} {
+	if len(args) == 0 {
+		msg := fmt.Sprintf("Max: no enough arguments.")
+		panic(msg)
+	}
+
+	if len(args) == 1 {
+		v := reflect.ValueOf(args[0])
+		if v.Kind() == reflect.Slice || v.Kind() == reflect.Array {
+			return MaxInSlice(args[0])
+		} else {
+			return args[0]
+		}
+	}
+	return MaxInSlice(args)
+}
+
+func MaxInSlice(expr interface{}) interface{} {
+	v := reflect.ValueOf(expr)
+	if v.Len() == 0 {
+		msg := fmt.Sprintf("Max: %v has zero length and no first element.", expr)
+		panic(msg)
+	}
+	var r interface{} = v.Index(0).Interface()
+	for i := 1; i < v.Len(); i++ {
+		x := v.Index(i).Interface()
+		if Greater(x, r) {
+			r = x
+		}
+	}
+	return r
+}
+
+func Less(a interface{}, b interface{}) bool {
+	return !Greater(a, b)
+}
+
+func isPrimitiveComparable(x interface{}) bool {
+	v := reflect.ValueOf(x)
+	switch v.Kind() {
+	case reflect.Int:
+		return true
+	case reflect.Int8:
+		return true
+	case reflect.Int16:
+		return true
+	case reflect.Int32:
+		return true
+	case reflect.Int64:
+		return true
+	case reflect.Uint:
+		return true
+	case reflect.Uint8:
+		return true
+	case reflect.Uint16:
+		return true
+	case reflect.Uint32:
+		return true
+	case reflect.Uint64:
+		return true
+	case reflect.Float32:
+		return true
+	case reflect.Float64:
+		return true
+	case reflect.String:
+		return true
+	default:
+		return false
+	}
+}
+
+func Greater(a interface{}, b interface{}) bool {
+	v1 := reflect.ValueOf(a)
+	v2 := reflect.ValueOf(b)
+	if v1.Kind() != v2.Kind() {
+		msg := fmt.Sprintf("%v and %v are different kinds of elments", v1, v2)
+		panic(msg)
+	}
+	switch v1.Kind() {
+	case reflect.Int:
+		return a.(int) > b.(int)
+	case reflect.Int8:
+		return a.(int8) > b.(int8)
+	case reflect.Int16:
+		return a.(int16) > b.(int16)
+	case reflect.Int32:
+		return a.(int32) > b.(int32)
+	case reflect.Int64:
+		return a.(int64) > b.(int64)
+	case reflect.Uint:
+		return a.(uint) > b.(uint)
+	case reflect.Uint8:
+		return a.(uint8) > b.(uint8)
+	case reflect.Uint16:
+		return a.(uint16) > b.(uint16)
+	case reflect.Uint32:
+		return a.(uint32) > b.(uint32)
+	case reflect.Uint64:
+		return a.(uint64) > b.(uint64)
+	case reflect.Float32:
+		return a.(float32) > b.(float32)
+	case reflect.Float64:
+		return a.(float64) > b.(float64)
+	case reflect.String:
+		return a.(string) > b.(string)
+	default:
+		msg := fmt.Sprintf("compare function is missing, you must use Sort(xs, func(a interface{}, b interface{})bool{}) to sort.")
+		panic(msg)
+	}
+}
 
 
+func Min(args ...interface{}) interface{} {
+	if len(args) == 0 {
+		msg := fmt.Sprintf("Max: no enough arguments.")
+		panic(msg)
+	}
+
+	if len(args) == 1 {
+		v := reflect.ValueOf(args[0])
+		if v.Kind() == reflect.Slice || v.Kind() == reflect.Array {
+			return MinInArraySlice(args[0])
+		} else {
+			return args[0]
+		}
+	}
+	return MinInArraySlice(args)
+}
+
+func MinInArraySlice(expr interface{}) interface{} {
+	v := reflect.ValueOf(expr)
+	if v.Len() == 0 {
+		msg := fmt.Sprintf("Min: %v has zero length and no first element.", expr)
+		panic(msg)
+	}
+	var r interface{} = v.Index(0).Interface()
+	for i := 1; i < v.Len(); i++ {
+		x := v.Index(i).Interface()
+		if !Greater(x, r) {
+			r = x
+		}
+	}
+	return r
+}

@@ -105,6 +105,16 @@ var _ = Describe("list", func() {
 		})
 
 		It("applies f to each element in expr.", func() {
+			add1 := func(x interface{}) interface{} {
+				return x.(int) + 1
+			}
+			xs := [5]int{1,2,3,4,5}
+			actual := Map(add1, xs)
+			expected := []interface{}{2, 3, 4, 5, 6}
+			Expect(actual).To(Equal(expected))
+		})
+
+		It("applies f to each element in expr.", func() {
 			double := func(x interface{}) interface{} {
 				return fmt.Sprintf("%v%v", x, x)
 			}
@@ -141,6 +151,16 @@ var _ = Describe("list", func() {
 			expected := []interface{}{1,3,5}
 			Expect(actual).To(Equal(expected))
 		})
+
+		It("picks out all elements of list for which crit(e) is true.", func() {
+			oddQ := func(x interface{}) bool {
+				return x.(int) % 2 == 1
+			}
+			xs := [6]int{1,2,3,4,5,6}
+			actual := Filter(oddQ, xs)
+			expected := []interface{}{1,3,5}
+			Expect(actual).To(Equal(expected))
+		})
 	})
 
 	Context("Fold(f, r, expr)", func() {
@@ -172,11 +192,25 @@ var _ = Describe("list", func() {
 			expected := 1
 			Expect(actual).To(Equal(expected))
 		})
+
+		It("gives the first element in expr.", func() {
+			xs := [5]int{1,2,3,4,5}
+			actual := First(xs)
+			expected := 1
+			Expect(actual).To(Equal(expected))
+		})
 	})
 
 	Context("Last(expr)", func() {
 		It("gives the last element in expr.", func() {
 			xs := Range(5)
+			actual := Last(xs)
+			expected := 5
+			Expect(actual).To(Equal(expected))
+		})
+
+		It("gives the last element in expr.", func() {
+			xs := [5]int{1,2,3,4,5}
 			actual := Last(xs)
 			expected := 5
 			Expect(actual).To(Equal(expected))
@@ -265,10 +299,20 @@ var _ = Describe("list", func() {
 		})
 
 		It("gives a list of the positions at which objects matching pattern appear in expr.", func() {
-			xs := map[int]string{1:"abc", 2:"def", 7: "def"}
-			actual := Position(xs, "def")
-			expected := [][]interface{}{{2}, {7}}
+			xs := [2]string{"abc", "def"}
+			actual := Position(xs, "adc")
+			expected := [][]interface{}{}
 			Expect(actual).To(Equal(expected))
+		})
+
+		It("gives a list of the positions at which objects matching pattern appear in expr.", func() {
+			xs := map[int]string{1:"abc", 2:"def", 7: "def"}
+			var indices [][]interface{} = Position(xs, "def")
+			var actual []interface{} = Sort(indices, func(a,b interface{}) bool {
+				return a.([]interface{})[0].(int) < b.([]interface{})[0].(int)
+			})
+			var expected []interface{} = []interface{}{[]int{2},[]int{7}}
+			Expect(fmt.Sprintf("%v", actual)).To(Equal(fmt.Sprintf("%v", expected)))
 		})
 	})
 
@@ -302,7 +346,7 @@ var _ = Describe("list", func() {
 		})
 
 		It("gives the number of elements in list that match pattern.", func() {
-			xs := []string{"abc", "def"}
+			xs := [2]string{"abc", "def"}
 			actual := Count(xs, "adc")
 			expected := 0
 			Expect(actual).To(Equal(expected))
@@ -312,6 +356,192 @@ var _ = Describe("list", func() {
 			xs := map[int]string{1:"abc", 2:"def", 7: "def"}
 			actual := Count(xs, "def")
 			expected := 2
+			Expect(actual).To(Equal(expected))
+		})
+
+		It("gives the number of elements in list that match pattern.", func() {
+			type Person struct {
+				name string
+			}
+			xs := map[int]Person{1:Person{name:"abc"}, 2:Person{name:"def"}, 7:Person{name:"def"}}
+			actual := Count(xs, Person{name:"def"})
+			expected := 2
+			Expect(actual).To(Equal(expected))
+		})
+	})
+
+	Context("Sort(expr)", func() {
+		It("sorts the elements of list into canonical order.", func() {
+			xs := []int{3, 1, 2, 5}
+			actual := Sort(xs)
+			expected := []interface{}{1, 2, 3, 5}
+			Expect(actual).To(Equal(expected))
+		})
+
+		It("sorts the elements of list into canonical order.", func() {
+			xs := []int{3, 1, 2, 5}
+			actual := Sort(xs, Greater)
+			expected := []interface{}{5, 3, 2, 1}
+			Expect(actual).To(Equal(expected))
+		})
+
+		It("sorts the elements of list into canonical order.", func() {
+			xs := []int{3, 1, 2, 5}
+			less := func(a, b interface{}) bool { return a.(int) < b.(int) }
+			actual := Sort(xs, less)
+			expected := []interface{}{1, 2, 3, 5}
+			Expect(actual).To(Equal(expected))
+		})
+
+		It("sorts the elements of list into canonical order.", func() {
+			xs := []string{"bc", "cd", "ab"}
+			actual := Sort(xs)
+			expected := []interface{}{"ab", "bc", "cd"}
+			Expect(actual).To(Equal(expected))
+		})
+
+		It("sorts the elements of list into canonical order.", func() {
+			xs := []string{"bc", "cd", "ab"}
+			less := func(a, b interface{}) bool { return a.(string) < b.(string) }
+			actual := Sort(xs, less)
+			expected := []interface{}{"ab", "bc", "cd"}
+			Expect(actual).To(Equal(expected))
+		})
+	})
+
+	Context("Sort(expr)", func() {
+		type Person struct {
+			name string
+			age int
+		}
+		xs := []Person{
+			Person{name:"b1", age: 10},
+			Person{name:"a1", age: 20},
+			Person{name:"c1", age: 15},
+		}
+
+		It("sorts the elements of list into canonical order.", func() {
+			Ω(func() { Sort(xs) }).Should(Panic())
+		})
+
+		It("sorts the elements of list into canonical order.", func() {
+			less := func(a , b interface{}) bool { return a.(Person).name < b.(Person).name }
+			actual := Sort(xs, less)
+			expected := []interface{}{
+				Person{name:"a1", age: 20},
+				Person{name:"b1", age: 10},
+				Person{name:"c1", age: 15},
+			}
+			Expect(actual).To(Equal(expected))
+		})
+
+		It("sorts the elements of list into canonical order.", func() {
+			less := func(a , b interface{}) bool { return a.(Person).age < b.(Person).age}
+			actual := Sort(xs, less)
+			expected := []interface{}{
+				Person{name:"b1", age: 10},
+				Person{name:"c1", age: 15},
+				Person{name:"a1", age: 20},
+			}
+			Expect(actual).To(Equal(expected))
+		})
+	})
+
+	Context("Reverse(expr)", func() {
+		It("array", func() {
+			xs := [10]int{0,1,2,3,4,5,6,7,8,9}
+			actual := Reverse(xs)
+			expected := []interface{}{9,8,7,6,5,4,3,2,1,0}
+			Expect(actual).To(Equal(expected))
+		})
+
+		It("slice", func() {
+			xs := Range(0, 9)
+			actual := Reverse(xs)
+			expected := []interface{}{9,8,7,6,5,4,3,2,1,0}
+			Expect(actual).To(Equal(expected))
+		})
+
+		It("slice", func() {
+			xs := []string{"def", "abc", "ghi"}
+			actual := Reverse(xs)
+			expected := []interface{}{"ghi", "abc", "def"}
+			Expect(actual).To(Equal(expected))
+		})
+	})
+
+	Context("Max(expr)", func() {
+		It("array", func() {
+			xs := [10]int{0, 1, 2, 3, 4, 5, 6, 7, 8, 9}
+			actual := Max(xs)
+			expected := 9
+			Expect(actual).To(Equal(expected))
+		})
+
+		It("array", func() {
+			xs := [1]int{9}
+			actual := Max(xs)
+			expected := 9
+			Expect(actual).To(Equal(expected))
+		})
+
+		It("array", func() {
+			xs := [3]string{"abc", "def", "ghi"}
+			actual := Max(xs)
+			expected := "ghi"
+			Expect(actual).To(Equal(expected))
+		})
+
+		It("array", func() {
+			actual := Max(1,2,3)
+			expected := 3
+			Expect(actual).To(Equal(expected))
+		})
+
+		It("array", func() {
+			actual := Max("abc", "def")
+			expected := "def"
+			Expect(actual).To(Equal(expected))
+		})
+	})
+
+	Context("Min(expr)", func() {
+		It("array", func() {
+			xs := [10]int{0, 1, 2, 3, 4, 5, 6, 7, 8, 9}
+			actual := Min(xs)
+			expected := 0
+			Expect(actual).To(Equal(expected))
+		})
+
+		It("array", func() {
+			xs := [1]int{1}
+			actual := Min(xs)
+			expected := 1
+			Expect(actual).To(Equal(expected))
+		})
+
+		It("array", func() {
+			xs := [3]string{"abc", "def", "ghi"}
+			actual := Min(xs)
+			expected := "abc"
+			Expect(actual).To(Equal(expected))
+		})
+
+		It("array", func() {
+			actual := Min(1,2,3)
+			expected := 1
+			Expect(actual).To(Equal(expected))
+		})
+
+		It("array", func() {
+			actual := Min(1)
+			expected := 1
+			Expect(actual).To(Equal(expected))
+		})
+
+		It("array", func() {
+			actual := Min("abc", "def")
+			expected := "abc"
 			Expect(actual).To(Equal(expected))
 		})
 	})
