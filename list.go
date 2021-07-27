@@ -109,7 +109,7 @@ func Select(f interface{}, slice interface{}) interface{} {
 	elementType := sv.Type().Elem()
 	mustBeFuncSignature(sv, fv, elementType, reflect.ValueOf(true).Type())
 
-	var ys = []interface{}{}
+	ys := []interface{}{}
 	for i := 0; i < sv.Len(); i++ {
 		x := sv.Index(i)
 		args := []reflect.Value{x}
@@ -147,13 +147,23 @@ func Fold(f interface{}, initial interface{}, slice interface{}) interface{} {
 	return result.Interface()
 }
 
-func MapIndexed(f func(interface{}, interface{}) interface{}, slice interface{}) []interface{}{
-	var xs = Map(Identity, slice)
-	var rs []interface{} = make([]interface{}, Length(xs))
-	for index, x := range(xs) {
-		rs[index] = f(x, index)
+func MapIndexed(f interface{}, slice interface{}) interface{}{
+	sv := reflect.ValueOf(slice)
+	fv := reflect.ValueOf(f)
+	mustBe(fv, reflect.Func)
+	mustBeArraySlice(sv)
+
+	elementType := sv.Type().Elem()
+	mustBeFuncSignature(sv, fv, elementType, reflect.ValueOf(0).Type(), nil)
+
+	var ins[2]reflect.Value
+	ys := reflect.MakeSlice(reflect.SliceOf(fv.Type().Out(0)), sv.Len(), sv.Len())
+	for i := 0; i < sv.Len(); i++ {
+		ins[0] = sv.Index(i)
+		ins[1] = reflect.ValueOf(i)
+		ys.Index(i).Set(fv.Call(ins[:])[0])
 	}
-	return rs
+	return ys.Interface()
 }
 
 func Identity(x interface{}) interface{} {

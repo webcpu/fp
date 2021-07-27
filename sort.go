@@ -5,7 +5,7 @@ import (
 	"reflect"
 )
 
-func Sort(args ...interface{}) []interface{} {
+func Sort(args ...interface{}) interface{} {
 	switch len(args) {
 	case 0:
 		msg := fmt.Sprintf("Sort: no enough arguments.")
@@ -21,15 +21,15 @@ func Sort(args ...interface{}) []interface{} {
 		}
 		return _Sort(args[0], Less)
 	case 2:
-		var less func(interface{}, interface{}) bool = args[1].(func(interface{}, interface{})bool)
-		return _Sort(args[0], less)
+		//var less func(interface{}, interface{}) bool = args[1].(func(interface{}, interface{})bool)
+		return _Sort(args[0], args[1])
 	default:
 		msg := fmt.Sprintf("Sort: too many arguments.")
 		panic(msg)
 	}
 }
 
-func _Sort(expr interface{}, less func(interface{},interface{}) bool) []interface{} {
+func _Sort(expr interface{}, less interface{}) interface{} {
 	v := reflect.ValueOf(expr)
 	switch v.Kind() {
 	case reflect.Slice, reflect.Array:
@@ -37,7 +37,7 @@ func _Sort(expr interface{}, less func(interface{},interface{}) bool) []interfac
 	default:
 		panicTypeError(v)
 	}
-	return []interface{}{}
+	return expr
 }
 
 // An implementation of Interface can be sorted by the routines in this package.
@@ -70,12 +70,37 @@ type XSlice []interface{}
 func (x XSlice) Len() int           { return len(x) }
 func (x XSlice) Swap(i, j int)      { x[i], x[j] = x[j], x[i] }
 
-func sortArraySlice(expr interface{}, _less func(interface{}, interface{}) bool) []interface{} {
-	var slice XSlice = Map(Identity, expr).(XSlice)
-	less := func(i,j int) bool { return _less(slice[i], slice[j]) }
+func sortArraySlice(expr interface{}, _less interface{}) interface{} {
+	sv := reflect.ValueOf(expr)
+	mustBeArraySlice(sv)
+
+	elementType := sv.Type().Elem()
+
+	slice := toXSlice(sv)
+
+	less := func(i, j int) bool {
+		v := reflect.ValueOf(slice)
+		fv := reflect.ValueOf(_less)
+		var ins [2]reflect.Value
+		ins[0] = v.Index(i)
+		ins[1] = v.Index(j)
+		return fv.Call(ins[:])[0].Interface().(bool)
+	}
 	_sortSlice(slice, less)
-	return []interface{}{}
-	//return Map(Identity, slice)
+
+	ys := reflect.MakeSlice(reflect.SliceOf(elementType), sv.Len(), sv.Len())
+	for i := 0; i < sv.Len(); i++ {
+		ys.Index(i).Set(reflect.ValueOf(slice[i]))
+	}
+	return ys.Interface()
+}
+
+func toXSlice(sv reflect.Value) XSlice {
+	var slice XSlice = XSlice{}
+	for i := 0; i < sv.Len(); i++ {
+		slice = append(slice, sv.Index(i).Interface())
+	}
+	return slice
 }
 
 // Sort sorts data.

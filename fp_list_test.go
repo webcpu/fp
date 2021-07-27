@@ -6,6 +6,7 @@ import (
 	. "github.com/onsi/ginkgo"
 	. "github.com/onsi/gomega"
 	"strconv"
+	"strings"
 )
 
 var _ = Describe("list", func() {
@@ -154,12 +155,22 @@ var _ = Describe("list", func() {
 		})
 
 		It("picks out all elements of list for which crit(e) is true.", func() {
-			oddQ := func(x int) bool {
-				return x % 2 == 1
+			uppercaseQ := func(x string) bool {
+				return strings.ToUpper(x) == x
 			}
-			xs := [6]int{1,2,3,4,5,6}
-			actual := Filter(oddQ, xs)
-			expected := []int{1,3,5}
+			xs := []string{"abc", "DEF"}
+			actual := Filter(uppercaseQ, xs)
+			expected := []string{"DEF"}
+			Expect(actual).To(Equal(expected))
+		})
+
+		It("picks out all elements of list for which crit(e) is true.", func() {
+			uppercaseQ := func(x string) bool {
+				return strings.ToUpper(x) == x
+			}
+			xs := [2]string{"abc", "DEF"}
+			actual := Filter(uppercaseQ, xs)
+			expected := []string{"DEF"}
 			Expect(actual).To(Equal(expected))
 		})
 	})
@@ -192,6 +203,18 @@ var _ = Describe("list", func() {
 			xs := Range(5)
 			actual := Fold(times, "0", xs)
 			expected := "012345"
+			Expect(actual).To(Equal(expected))
+		})
+	})
+
+	Context("MapIndexed(f, expr)", func() {
+		It("MapIndexed[f,expr] applies f to the elements of expr, giving the part specification of each element as a second argument to f.", func() {
+			combine := func(x string, index int) string {
+				return fmt.Sprintf("%v -> %v", index, x)
+			}
+			xs := []string{"ab", "cd", "ef"}
+			actual := MapIndexed(combine, xs)
+			expected := []string{"0 -> ab", "1 -> cd", "2 -> ef"}
 			Expect(actual).To(Equal(expected))
 		})
 	})
@@ -381,18 +404,18 @@ var _ = Describe("list", func() {
 		})
 	})
 
-	XContext("Sort(expr)", func() {
+	Context("Sort(expr)", func() {
 		It("sorts the elements of list into canonical order.", func() {
 			xs := []int{3, 1, 2, 5}
 			actual := Sort(xs)
-			expected := []interface{}{1, 2, 3, 5}
+			expected := []int{1, 2, 3, 5}
 			Expect(actual).To(Equal(expected))
 		})
 
-		It("sorts the elements of list into canonical order.", func() {
+		XIt("sorts the elements of list into canonical order.", func() {
 			xs := []int{3, 1, 2, 5}
 			actual := Sort(xs, Greater)
-			expected := []interface{}{5, 3, 2, 1}
+			expected := []int{5, 3, 2, 1}
 			Expect(actual).To(Equal(expected))
 		})
 
@@ -400,14 +423,14 @@ var _ = Describe("list", func() {
 			xs := []int{3, 1, 2, 5}
 			less := func(a, b interface{}) bool { return a.(int) < b.(int) }
 			actual := Sort(xs, less)
-			expected := []interface{}{1, 2, 3, 5}
+			expected := []int{1, 2, 3, 5}
 			Expect(actual).To(Equal(expected))
 		})
 
 		It("sorts the elements of list into canonical order.", func() {
 			xs := []string{"bc", "cd", "ab"}
 			actual := Sort(xs)
-			expected := []interface{}{"ab", "bc", "cd"}
+			expected := []string{"ab", "bc", "cd"}
 			Expect(actual).To(Equal(expected))
 		})
 
@@ -415,7 +438,7 @@ var _ = Describe("list", func() {
 			xs := []string{"bc", "cd", "ab"}
 			less := func(a, b interface{}) bool { return a.(string) < b.(string) }
 			actual := Sort(xs, less)
-			expected := []interface{}{"ab", "bc", "cd"}
+			expected := []string{"ab", "bc", "cd"}
 			Expect(actual).To(Equal(expected))
 		})
 	})
