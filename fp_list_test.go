@@ -412,7 +412,7 @@ var _ = Describe("list", func() {
 			Expect(actual).To(Equal(expected))
 		})
 
-		XIt("sorts the elements of list into canonical order.", func() {
+		It("sorts the elements of list into canonical order.", func() {
 			xs := []int{3, 1, 2, 5}
 			actual := Sort(xs, Greater)
 			expected := []int{5, 3, 2, 1}
@@ -443,7 +443,7 @@ var _ = Describe("list", func() {
 		})
 	})
 
-	XContext("Sort(expr)", func() {
+	Context("Sort(expr)", func() {
 		type Person struct {
 			name string
 			age int
@@ -461,7 +461,7 @@ var _ = Describe("list", func() {
 		It("sorts the elements of list into canonical order.", func() {
 			less := func(a , b interface{}) bool { return a.(Person).name < b.(Person).name }
 			actual := Sort(xs, less)
-			expected := []interface{}{
+			expected := []Person {
 				Person{name:"a1", age: 20},
 				Person{name:"b1", age: 10},
 				Person{name:"c1", age: 15},
@@ -472,7 +472,7 @@ var _ = Describe("list", func() {
 		It("sorts the elements of list into canonical order.", func() {
 			less := func(a , b interface{}) bool { return a.(Person).age < b.(Person).age}
 			actual := Sort(xs, less)
-			expected := []interface{}{
+			expected := []Person {
 				Person{name:"b1", age: 10},
 				Person{name:"c1", age: 15},
 				Person{name:"a1", age: 20},
