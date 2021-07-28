@@ -255,7 +255,7 @@ var _ = Describe("list", func() {
 		It("gives the first n elements in list.", func() {
 			xs := Range(5)
 			actual := Take(xs, 2)
-			expected := []interface{}{1, 2}
+			expected := []int{1, 2}
 			Expect(actual).To(Equal(expected))
 		})
 	})
@@ -264,7 +264,7 @@ var _ = Describe("list", func() {
 		It("gives the last n elements in list.", func() {
 			xs := Range(5)
 			actual := Take(xs, -2)
-			expected := []interface{}{4,5}
+			expected := []int{4,5}
 			Expect(actual).To(Equal(expected))
 		})
 	})
@@ -273,7 +273,7 @@ var _ = Describe("list", func() {
 		It("gives list with its first n elements dropped.", func() {
 			xs := Range(5)
 			actual := Drop(xs, 2)
-			expected := []interface{}{3,4,5}
+			expected := []int{3,4,5}
 			Expect(actual).To(Equal(expected))
 		})
 	})
@@ -282,7 +282,7 @@ var _ = Describe("list", func() {
 		It("gives list with its last n elements dropped.", func() {
 			xs := Range(5)
 			actual := Drop(xs, -2)
-			expected := []interface{}{1,2,3}
+			expected := []int{1,2,3}
 			Expect(actual).To(Equal(expected))
 		})
 	})

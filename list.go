@@ -249,7 +249,6 @@ func Take(slice interface{}, n int) interface{} {
 		panic(msg)
 	}
 
-	var ys = []interface{}{}
 	start, end := func() (int, int) {
 		if n > 0 {
 			return 0, n
@@ -258,11 +257,13 @@ func Take(slice interface{}, n int) interface{} {
 		}
 	}()
 
+	elementType := sv.Type().Elem()
+	var ys = reflect.MakeSlice(reflect.SliceOf(elementType), end-start, end-start)
+
 	for i := start; i < end; i++ {
-		x := sv.Index(i).Interface()
-		ys = append(ys, x)
+		ys.Index(i-start).Set(sv.Index(i))
 	}
-	return ys
+	return ys.Interface()
 }
 
 func Drop(slice interface{}, n int) interface{} {
@@ -283,7 +284,6 @@ func Drop(slice interface{}, n int) interface{} {
 		panic(msg)
 	}
 
-	var ys = []interface{}{}
 	start, end := func() (int, int) {
 		if n > 0 {
 			return n, sv.Len()
@@ -292,13 +292,14 @@ func Drop(slice interface{}, n int) interface{} {
 		}
 	}()
 
-	for i := start; i < end; i++ {
-		x := sv.Index(i).Interface()
-		ys = append(ys, x)
-	}
-	return ys
-}
+	elementType := sv.Type().Elem()
+	var ys = reflect.MakeSlice(reflect.SliceOf(elementType), end-start, end-start)
 
+	for i := start; i < end; i++ {
+		ys.Index(i-start).Set(sv.Index(i))
+	}
+	return ys.Interface()
+}
 
 func Position(expr interface{}, pattern interface{}) [][]interface{} {
 	v := reflect.ValueOf(expr)
