@@ -7,6 +7,7 @@ import (
 	. "github.com/onsi/gomega"
 	"strconv"
 	"strings"
+	"time"
 )
 
 var _ = Describe("list", func() {
@@ -130,6 +131,53 @@ var _ = Describe("list", func() {
 	Context("Map panic", func() {
 		It("applies f to each element in expr.", func() {
 			Ω(func() { Map(Identity, 3) }).Should(Panic())
+		})
+	})
+
+	Context("ParallelMap(f, expr)", func() {
+		It("applies f to each element in expr.", func() {
+			add1 := func(x int) int {
+				time.Sleep(10 * time.Millisecond)
+				return x + 1
+			}
+			xs := Range(5)
+			t, actual := Timing(func() interface{} {return ParallelMap(add1, xs)})
+			expected := Range(2,6)
+			Expect(actual).To(Equal(expected))
+			fmt.Printf("t = %v", t)
+		})
+
+		It("applies f to each element in expr.", func() {
+			add1 := func(x int) int {
+				return x + 1
+			}
+			xs := [5]int{1, 2, 3, 4, 5}
+			t, actual := Timing(func() interface{} {return ParallelMap(add1, xs)})
+			expected := []int{2, 3, 4, 5, 6}
+			Expect(actual).To(Equal(expected))
+			fmt.Printf("t = %v", t)
+		})
+	})
+
+	Context("ParallelDo(f, expr)", func() {
+		It("applies f to each element in expr.", func() {
+			idle := func(x int) {
+				time.Sleep(10 * time.Millisecond)
+			}
+			xs := Range(5)
+			t, actual := Timing(func() {ParallelDo(idle, xs)})
+			Expect(actual).To(BeNil())
+			fmt.Printf("t = %v", t)
+		})
+
+		It("applies f to each element in expr.", func() {
+			doNothing := func(x int) {
+				_ = x + 1
+			}
+			xs := [5]int{1, 2, 3, 4, 5}
+			t, actual := Timing(func() {ParallelDo(doNothing, xs)})
+			Expect(actual).To(BeNil())
+			fmt.Printf("t = %v", t)
 		})
 	})
 
@@ -591,7 +639,6 @@ var _ = Describe("list", func() {
 			_, expected := 0.003 , Range(1,1001)
 			Expect(t1>0).To(BeTrue())
 			Expect(actual).To(Equal(expected))
-			fmt.Println(Timing(f))
 		})
 
 		It("function with return", func() {
@@ -602,7 +649,91 @@ var _ = Describe("list", func() {
 			t1, actual := Timing(f)
 			Expect(t1>0).To(BeTrue())
 			Expect(actual).To(BeNil())
-			fmt.Println(Timing(f))
+		})
+
+		It("function with return", func() {
+			f := func (y int) {
+				fmt.Println(y)
+				xs := Range(0, 10000)
+				_ = Map(func(x int) int {return x+1}, xs).([]int)
+			}
+			Ω(func(){Timing(f)}).Should(Panic())
+		})
+	})
+
+	Context("MemberQ(list, x)", func() {
+		It("returns true if an element of list matches form, and false otherwise.", func() {
+			xs := Range(10)
+			actual := MemberQ(xs, 1)
+			expected := true
+			Expect(actual).To(Equal(expected))
+		})
+
+		It("returns true if an element of list matches form, and false otherwise.", func() {
+			xs := Range(10)
+			actual := MemberQ(xs, 11)
+			expected := false
+			Expect(actual).To(Equal(expected))
+		})
+
+		It("returns true if an element of list matches form, and false otherwise.", func() {
+			xs := []string{"abc", "def"}
+			actual := MemberQ(xs, "abc")
+			expected := true
+			Expect(actual).To(Equal(expected))
+		})
+
+		It("returns true if an element of list matches form, and false otherwise.", func() {
+			xs := []string{"abc", "def"}
+			actual := MemberQ(xs, "acd")
+			expected := false
+			Expect(actual).To(Equal(expected))
+		})
+
+		It("returns true if an element of list matches form, and false otherwise.", func() {
+			type Person struct {
+				name string
+				age int
+			}
+			person := Person{name:"b1", age: 10}
+			xs := []interface{}{1, "def", []int{1,2,3},Person{name:"b1", age: 10}}
+			Expect(MemberQ(xs, 1)).To(Equal(true))
+			Expect(MemberQ(xs, "def")).To(Equal(true))
+			Expect(MemberQ(xs, []int{1,2,3})).To(Equal(true))
+			Expect(MemberQ(xs, []int{1,2,2})).To(Equal(false))
+			Expect(MemberQ(xs, person)).To(Equal(true))
+			Expect(MemberQ(xs, Person{name:"b1", age: 11})).To(Equal(false))
+		})
+	})
+
+	Context("KeyMemberQ(dict, key)", func() {
+		It("yields true if a key in the association assoc matches key, and false otherwise.", func() {
+			m := map[string]int{"a": 1, "b": 2}
+			Expect(KeyMemberQ(m, "a")).To(Equal(true))
+			Expect(KeyMemberQ(m, "b")).To(Equal(true))
+			Expect(KeyMemberQ(m, "c")).To(Equal(false))
+		})
+
+		It("yields true if a key in the association assoc matches key, and false otherwise.", func() {
+			m := map[interface{}]int{"a": 1, "b": 2, 3: 3}
+			Expect(KeyMemberQ(m, "a")).To(Equal(true))
+			Expect(KeyMemberQ(m, "b")).To(Equal(true))
+			Expect(KeyMemberQ(m, 3)).To(Equal(true))
+			Expect(KeyMemberQ(m, "c")).To(Equal(false))
+		})
+	})
+
+	Context("Keys(dict)", func() {
+		It("[]string", func() {
+			m := map[string]int{"a": 1, "b": 2}
+			Expect(Sort(Keys(m))).To(Equal([]string{"a", "b"}))
+		})
+	})
+
+	Context("Values(dict)", func() {
+		It("[]int", func() {
+			m := map[string]int{"a": 1, "b": 2}
+			Expect(Sort(Values(m))).To(Equal([]int{1, 2}))
 		})
 	})
 })

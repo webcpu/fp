@@ -5,6 +5,7 @@ import (
 	"math"
 	"reflect"
 	"runtime"
+	"sync"
 	"time"
 )
 
@@ -49,8 +50,8 @@ func mustBe(v reflect.Value, kind reflect.Kind) {
 	}
 }
 
-func mustBeFuncSignature(sv reflect.Value, fv reflect.Value, types ...reflect.Type) {
-	if !verifyFuncSignature(fv, types...) {
+func mustBeFuncSignature(sv reflect.Value, fv reflect.Value, numOut int, types ...reflect.Type) {
+	if !verifyFuncSignature(fv, numOut, types...) {
 		msg := "Map : function signature must be func(" + sv.Type().Elem().String() + ") OutputElementType"
 		panic(msg)
 	}
@@ -66,20 +67,23 @@ func panicTypeError(v reflect.Value) {
 	}
 }
 
-func verifyFuncSignature(fv reflect.Value, types ...reflect.Type) bool {
+func verifyFuncSignature(fv reflect.Value, numOut int, types ...reflect.Type) bool {
 	mustBe(fv, reflect.Func)
-	if (fv.Type().NumIn() != len(types) - 1) || fv.Type().NumOut() != 1 {
+	if (fv.Type().NumIn() != len(types) - numOut) || fv.Type().NumOut() != numOut {
 		return false
 	}
 
-	for i := 0; i < len(types)-1; i++ {
+	for i := 0; i < len(types)-numOut; i++ {
 		if fv.Type().In(i) != types[i] {
 			return false
 		}
 	}
 
-	outType := types[len(types)-1]
-	return outType == nil || fv.Type().Out(0) == outType
+	var outType reflect.Type
+	if numOut > 0 {
+		outType = types[len(types)-numOut]
+	}
+	return numOut == 0 || outType == nil || fv.Type().Out(0) == outType
 }
 
 func Map(f interface{}, slice interface{}) interface{} {
@@ -89,7 +93,7 @@ func Map(f interface{}, slice interface{}) interface{} {
 	mustBeArraySlice(sv)
 
 	elementType := sv.Type().Elem()
-	mustBeFuncSignature(sv, fv, elementType, nil)
+	mustBeFuncSignature(sv, fv, 1, elementType, nil)
 
 	ys := reflect.MakeSlice(reflect.SliceOf(fv.Type().Out(0)), sv.Len(), sv.Len())
 	for i := 0; i < sv.Len(); i++ {
@@ -97,6 +101,56 @@ func Map(f interface{}, slice interface{}) interface{} {
 		ys.Index(i).Set(fv.Call(x)[0])
 	}
 	return ys.Interface()
+}
+
+func ParallelMap(f interface{}, slice interface{}) interface{} {
+	sv := reflect.ValueOf(slice)
+	fv := reflect.ValueOf(f)
+	mustBe(fv, reflect.Func)
+	mustBeArraySlice(sv)
+
+	elementType := sv.Type().Elem()
+	mustBeFuncSignature(sv, fv, 1, elementType, nil)
+
+	ys := reflect.MakeSlice(reflect.SliceOf(fv.Type().Out(0)), sv.Len(), sv.Len())
+
+	var wg sync.WaitGroup
+	wg.Add(sv.Len())
+
+	worker := func(i int) {
+		defer wg.Done()
+		x := []reflect.Value{sv.Index(i)}
+		value := fv.Call(x)[0]
+		ys.Index(i).Set(value)
+	}
+	for i := 0; i < sv.Len(); i++ {
+		worker(i)
+	}
+	wg.Wait()
+	return ys.Interface()
+}
+
+func ParallelDo(f interface{}, slice interface{}) {
+	sv := reflect.ValueOf(slice)
+	fv := reflect.ValueOf(f)
+	mustBe(fv, reflect.Func)
+	mustBeArraySlice(sv)
+
+	elementType := sv.Type().Elem()
+	mustBeFuncSignature(sv, fv, 0, elementType)
+
+	var wg sync.WaitGroup
+	wg.Add(sv.Len())
+
+	worker := func(i int) {
+		defer wg.Done()
+		x := []reflect.Value{sv.Index(i)}
+		fv.Call(x)
+	}
+	for i := 0; i < sv.Len(); i++ {
+		worker(i)
+	}
+	wg.Wait()
 }
 
 var Filter = Select
@@ -108,7 +162,7 @@ func Select(f interface{}, slice interface{}) interface{} {
 	mustBeArraySlice(sv)
 
 	elementType := sv.Type().Elem()
-	mustBeFuncSignature(sv, fv, elementType, reflect.ValueOf(true).Type())
+	mustBeFuncSignature(sv, fv, 1, elementType, reflect.ValueOf(true).Type())
 
 	ys := []interface{}{}
 	for i := 0; i < sv.Len(); i++ {
@@ -135,7 +189,7 @@ func Fold(f interface{}, initial interface{}, slice interface{}) interface{} {
 
 	elementType := sv.Type().Elem()
 	resultType := reflect.ValueOf(initial).Type()
-	mustBeFuncSignature(sv, fv, resultType, elementType, resultType)
+	mustBeFuncSignature(sv, fv, 1, resultType, elementType, resultType)
 
 	var result = reflect.ValueOf(initial)
 	var ins [2]reflect.Value
@@ -155,7 +209,7 @@ func MapIndexed(f interface{}, slice interface{}) interface{}{
 	mustBeArraySlice(sv)
 
 	elementType := sv.Type().Elem()
-	mustBeFuncSignature(sv, fv, elementType, reflect.ValueOf(0).Type(), nil)
+	mustBeFuncSignature(sv, fv, 1, elementType, reflect.ValueOf(0).Type(), nil)
 
 	var ins[2]reflect.Value
 	ys := reflect.MakeSlice(reflect.SliceOf(fv.Type().Out(0)), sv.Len(), sv.Len())
@@ -530,10 +584,13 @@ func MinInArraySlice(expr interface{}) interface{} {
 	return r
 }
 
-//func Timing(f interface{}) (float64, interface{}) {
 func Timing(f interface{}) (float64, interface{}) {
 	fv := reflect.ValueOf(f)
 	mustBe(fv, reflect.Func)
+	if fv.Type().NumIn() > 0 {
+		msg := fmt.Sprintf("Timing: %v should have zero parameters.", f)
+		panic(msg)
+	}
 
 	var ins = []reflect.Value{}
 	start := time.Now()
@@ -544,4 +601,64 @@ func Timing(f interface{}) (float64, interface{}) {
 		r = out[0].Interface()
 	}
 	return float64(elapsed) / float64(1000000000), r
+}
+
+func MemberQ(slice interface{}, x interface{}) bool {
+	sv := reflect.ValueOf(slice)
+	mustBeArraySlice(sv)
+
+	elementType := sv.Type().Elem()
+	if reflect.ValueOf(x).Type() != elementType && elementType.String() != "interface {}" {
+		msg := fmt.Sprintf("MemberQ: %v's type should be %v", x, elementType)
+		panic(msg)
+	}
+
+	for i := 0; i < sv.Len(); i++ {
+		if reflect.DeepEqual(sv.Index(i).Interface(), x) {
+			return true
+		}
+	}
+	return false
+}
+
+func KeyMemberQ(m interface{}, key interface{}) bool {
+	sv := reflect.ValueOf(m)
+	mustBe(sv, reflect.Map)
+
+	elementType := sv.Type().Key()
+	if reflect.ValueOf(key).Type() != elementType && elementType.String() != "interface {}" {
+		msg := fmt.Sprintf("MemberQ: %v's type should be %v", key, elementType)
+		panic(msg)
+	}
+
+	value := sv.MapIndex(reflect.ValueOf(key))
+	return value.IsValid() && !value.IsZero()
+}
+
+func Keys(m interface{}) interface{} {
+	sv := reflect.ValueOf(m)
+	mustBe(sv, reflect.Map)
+
+	elementType := sv.Type().Key()
+
+	kvs := sv.MapKeys()
+	xs := reflect.MakeSlice(reflect.SliceOf(elementType), len(kvs), len(kvs))
+	for i := 0; i < sv.Len(); i++ {
+		xs.Index(i).Set(kvs[i])
+	}
+	return xs.Interface()
+}
+
+func Values(m interface{}) interface{} {
+	sv := reflect.ValueOf(m)
+	mustBe(sv, reflect.Map)
+
+	elementType := sv.Type().Elem()
+
+	kvs := sv.MapKeys()
+	xs := reflect.MakeSlice(reflect.SliceOf(elementType), len(kvs), len(kvs))
+	for i := 0; i < sv.Len(); i++ {
+		xs.Index(i).Set(sv.MapIndex(kvs[i]))
+	}
+	return xs.Interface()
 }
