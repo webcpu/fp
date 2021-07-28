@@ -5,6 +5,7 @@ import (
 	"math"
 	"reflect"
 	"runtime"
+	"time"
 )
 
 func isMap(v reflect.Value) bool {
@@ -137,7 +138,7 @@ func Fold(f interface{}, initial interface{}, slice interface{}) interface{} {
 	mustBeFuncSignature(sv, fv, resultType, elementType, resultType)
 
 	var result = reflect.ValueOf(initial)
-	var ins[2]reflect.Value
+	var ins [2]reflect.Value
 	ins[0] = result
 	for i := 0; i < sv.Len(); i++ {
 		ins[1] = sv.Index(i)
@@ -527,4 +528,20 @@ func MinInArraySlice(expr interface{}) interface{} {
 		}
 	}
 	return r
+}
+
+//func Timing(f interface{}) (float64, interface{}) {
+func Timing(f interface{}) (float64, interface{}) {
+	fv := reflect.ValueOf(f)
+	mustBe(fv, reflect.Func)
+
+	var ins = []reflect.Value{}
+	start := time.Now()
+	out := fv.Call(ins[:])
+	elapsed := time.Since(start)
+	var r interface{}
+	if len(out) > 0 {
+		r = out[0].Interface()
+	}
+	return float64(elapsed) / float64(1000000000), r
 }
