@@ -19,9 +19,13 @@ var _ = Describe("function", func() {
 			expected := Reverse([]int{1, 2, 3, 4, 5})
 			Expect(xs).To(Equal(expected))
 		})
+	})
 
-		It("reverse", func() {
-			Ω(Apply(Reverse, Range(5))).Should(Panic())
+	Context("Construct(f, expr)", func() {
+		It("Range", func() {
+			xs := Construct(Range, 5)
+			expected := []int{1, 2, 3, 4, 5}
+			Expect(xs).To(Equal(expected))
 		})
 	})
 })
