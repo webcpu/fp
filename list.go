@@ -130,6 +130,24 @@ func ParallelMap(f interface{}, slice interface{}) interface{} {
 	return ys.Interface()
 }
 
+func Do(f interface{}, slice interface{}) {
+	sv := reflect.ValueOf(slice)
+	fv := reflect.ValueOf(f)
+	mustBe(fv, reflect.Func)
+	mustBeArraySlice(sv)
+
+	elementType := sv.Type().Elem()
+	mustBeFuncSignature(sv, fv, 0, elementType)
+
+	worker := func(i int) {
+		x := []reflect.Value{sv.Index(i)}
+		fv.Call(x)
+	}
+	for i := 0; i < sv.Len(); i++ {
+		worker(i)
+	}
+}
+
 func ParallelDo(f interface{}, slice interface{}) {
 	sv := reflect.ValueOf(slice)
 	fv := reflect.ValueOf(f)
@@ -439,38 +457,6 @@ func Reverse(expr interface{}) []interface{} {
 	return xs
 }
 
-func Max(args ...interface{}) interface{} {
-	if len(args) == 0 {
-		msg := fmt.Sprintf("Max: no enough arguments.")
-		panic(msg)
-	}
-
-	if len(args) == 1 {
-		v := reflect.ValueOf(args[0])
-		if v.Kind() == reflect.Slice || v.Kind() == reflect.Array {
-			return MaxInSlice(args[0])
-		} else {
-			return args[0]
-		}
-	}
-	return MaxInSlice(args)
-}
-
-func MaxInSlice(expr interface{}) interface{} {
-	v := reflect.ValueOf(expr)
-	if v.Len() == 0 {
-		msg := fmt.Sprintf("Max: %v has zero length and no first element.", expr)
-		panic(msg)
-	}
-	var r interface{} = v.Index(0).Interface()
-	for i := 1; i < v.Len(); i++ {
-		x := v.Index(i).Interface()
-		if Greater(x, r) {
-			r = x
-		}
-	}
-	return r
-}
 
 func Less(a interface{}, b interface{}) bool {
 	return !Greater(a, b)
@@ -548,40 +534,6 @@ func Greater(a interface{}, b interface{}) bool {
 		msg := fmt.Sprintf("compare function is missing, you must use Sort(xs, func(a interface{}, b interface{})bool{}) to sort.")
 		panic(msg)
 	}
-}
-
-
-func Min(args ...interface{}) interface{} {
-	if len(args) == 0 {
-		msg := fmt.Sprintf("Max: no enough arguments.")
-		panic(msg)
-	}
-
-	if len(args) == 1 {
-		v := reflect.ValueOf(args[0])
-		if v.Kind() == reflect.Slice || v.Kind() == reflect.Array {
-			return MinInArraySlice(args[0])
-		} else {
-			return args[0]
-		}
-	}
-	return MinInArraySlice(args)
-}
-
-func MinInArraySlice(expr interface{}) interface{} {
-	v := reflect.ValueOf(expr)
-	if v.Len() == 0 {
-		msg := fmt.Sprintf("Min: %v has zero length and no first element.", expr)
-		panic(msg)
-	}
-	var r interface{} = v.Index(0).Interface()
-	for i := 1; i < v.Len(); i++ {
-		x := v.Index(i).Interface()
-		if !Greater(x, r) {
-			r = x
-		}
-	}
-	return r
 }
 
 func Timing(f interface{}) (float64, interface{}) {

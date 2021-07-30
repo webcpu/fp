@@ -1,4 +1,4 @@
-package fp_test
+package test
 
 import (
 	"fmt"
@@ -156,6 +156,31 @@ var _ = Describe("list", func() {
 			expected := []int{2, 3, 4, 5, 6}
 			Expect(actual).To(Equal(expected))
 			fmt.Printf("t = %v", t)
+		})
+	})
+
+	Context("Do(f, expr)", func() {
+		It("applies f to each element in expr.", func() {
+			actual := make([]int, 5)
+			update := func(x int) {
+				actual[x-1] = x
+			}
+
+			xs := Range(5)
+			expected := xs
+			Do(update, xs)
+			Expect(actual).To(Equal(expected))
+		})
+
+		It("applies f to each element in expr.", func() {
+			actual := make([]int, 5)
+			update := func(x int) {
+				actual[x-1] = x*x
+			}
+			xs := Range(5)
+			expected := Map(func(x int) int {return x*x}, xs)
+			Do(update, xs)
+			Expect(actual).To(Equal(expected))
 		})
 	})
 
@@ -446,7 +471,7 @@ var _ = Describe("list", func() {
 				name string
 			}
 			xs := map[int]Person{1:Person{name:"abc"}, 2:Person{name:"def"}, 7:Person{name:"def"}}
-			actual := Count(xs, Person{name:"def"})
+			actual := Count(xs, Person{name: "def"})
 			expected := 2
 			Expect(actual).To(Equal(expected))
 		})
@@ -552,82 +577,6 @@ var _ = Describe("list", func() {
 		})
 	})
 
-	Context("Max(expr)", func() {
-		It("array", func() {
-			xs := [10]int{0, 1, 2, 3, 4, 5, 6, 7, 8, 9}
-			actual := Max(xs)
-			expected := 9
-			Expect(actual).To(Equal(expected))
-		})
-
-		It("array", func() {
-			xs := [1]int{9}
-			actual := Max(xs)
-			expected := 9
-			Expect(actual).To(Equal(expected))
-		})
-
-		It("array", func() {
-			xs := [3]string{"abc", "def", "ghi"}
-			actual := Max(xs)
-			expected := "ghi"
-			Expect(actual).To(Equal(expected))
-		})
-
-		It("array", func() {
-			actual := Max(1,2,3)
-			expected := 3
-			Expect(actual).To(Equal(expected))
-		})
-
-		It("array", func() {
-			actual := Max("abc", "def")
-			expected := "def"
-			Expect(actual).To(Equal(expected))
-		})
-	})
-
-	Context("Min(expr)", func() {
-		It("array", func() {
-			xs := [10]int{0, 1, 2, 3, 4, 5, 6, 7, 8, 9}
-			actual := Min(xs)
-			expected := 0
-			Expect(actual).To(Equal(expected))
-		})
-
-		It("array", func() {
-			xs := [1]int{1}
-			actual := Min(xs)
-			expected := 1
-			Expect(actual).To(Equal(expected))
-		})
-
-		It("array", func() {
-			xs := [3]string{"abc", "def", "ghi"}
-			actual := Min(xs)
-			expected := "abc"
-			Expect(actual).To(Equal(expected))
-		})
-
-		It("array", func() {
-			actual := Min(1,2,3)
-			expected := 1
-			Expect(actual).To(Equal(expected))
-		})
-
-		It("array", func() {
-			actual := Min(1)
-			expected := 1
-			Expect(actual).To(Equal(expected))
-		})
-
-		It("array", func() {
-			actual := Min("abc", "def")
-			expected := "abc"
-			Expect(actual).To(Equal(expected))
-		})
-	})
-
 	Context("Timing(expr)", func() {
 		It("function with return", func() {
 			f := func () []int {
@@ -637,7 +586,7 @@ var _ = Describe("list", func() {
 			}
 			t1, actual := Timing(f)
 			_, expected := 0.003 , Range(1,1001)
-			Expect(t1>0).To(BeTrue())
+			Expect(t1 >0).To(BeTrue())
 			Expect(actual).To(Equal(expected))
 		})
 
@@ -647,7 +596,7 @@ var _ = Describe("list", func() {
 				_ = Map(func(x int) int {return x+1}, xs).([]int)
 			}
 			t1, actual := Timing(f)
-			Expect(t1>0).To(BeTrue())
+			Expect(t1 >0).To(BeTrue())
 			Expect(actual).To(BeNil())
 		})
 
@@ -702,7 +651,7 @@ var _ = Describe("list", func() {
 			Expect(MemberQ(xs, []int{1,2,3})).To(Equal(true))
 			Expect(MemberQ(xs, []int{1,2,2})).To(Equal(false))
 			Expect(MemberQ(xs, person)).To(Equal(true))
-			Expect(MemberQ(xs, Person{name:"b1", age: 11})).To(Equal(false))
+			Expect(MemberQ(xs, Person{name: "b1", age: 11})).To(Equal(false))
 		})
 	})
 

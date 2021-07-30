@@ -1,4 +1,4 @@
-package fp_test
+package test
 
 import (
 	"testing"

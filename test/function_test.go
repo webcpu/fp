@@ -1,4 +1,4 @@
-package fp_test
+package test
 
 import (
 	. "fp"
@@ -56,7 +56,7 @@ var _ = Describe("function", func() {
 					total += num
 				}
 				n := len(nums)
-				mean := total/n
+				mean := total / n
 				return n, mean, total
 			}
 			xs := Construct(sum, 1,2,3,4,5)
@@ -71,6 +71,15 @@ var _ = Describe("function", func() {
 			actual := f(4)
 			expected := 4
 			Expect(actual).To(Equal(expected))
+		})
+
+		It("1 function", func() {
+			s := 1
+			g := func(x int) { s = x}
+			f := Composition(g)
+			f(4)
+			expected := 4
+			Expect(s).To(Equal(expected))
 		})
 
 		It("1 function", func() {
