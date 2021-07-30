@@ -6,7 +6,6 @@ import (
 	"reflect"
 	"runtime"
 	"sync"
-	"time"
 )
 
 func isMap(v reflect.Value) bool {
@@ -554,25 +553,6 @@ func Greater(a interface{}, b interface{}) bool {
 		msg := fmt.Sprintf("compare function is missing, you must use Sort(xs, func(a interface{}, b interface{})bool{}) to sort.")
 		panic(msg)
 	}
-}
-
-func Timing(f interface{}) (float64, interface{}) {
-	fv := reflect.ValueOf(f)
-	mustBe(fv, reflect.Func)
-	if fv.Type().NumIn() > 0 {
-		msg := fmt.Sprintf("Timing: %v should have zero parameters.", f)
-		panic(msg)
-	}
-
-	var ins = []reflect.Value{}
-	start := time.Now()
-	out := fv.Call(ins[:])
-	elapsed := time.Since(start)
-	var r interface{}
-	if len(out) > 0 {
-		r = out[0].Interface()
-	}
-	return float64(elapsed) / float64(1000000000), r
 }
 
 func MemberQ(slice interface{}, x interface{}) bool {

@@ -2,6 +2,8 @@ package fp
 
 import (
 	"fmt"
+	"math"
+	"math/cmplx"
 	"reflect"
 )
 
@@ -69,4 +71,42 @@ func MinInArraySlice(expr interface{}) interface{} {
 		}
 	}
 	return r
+}
+
+func Abs( x interface{}) interface{} {
+	v := reflect.ValueOf(x)
+	switch v.Kind() {
+	case reflect.Int:
+		return int(math.Abs(float64(x.(int))))
+	case reflect.Int8:
+		return int8(math.Abs(float64(x.(int8))))
+	case reflect.Int16:
+		return int16(math.Abs(float64(x.(int16))))
+	case reflect.Int32:
+		return int32(math.Abs(float64(x.(int32))))
+	case reflect.Int64:
+		return int64(math.Abs(float64(x.(int64))))
+	case reflect.Uint:
+		return x.(uint)
+	case reflect.Uint8:
+		return x.(uint8)
+	case reflect.Uint16:
+		return x.(uint16)
+	case reflect.Uint32:
+		return x.(uint32)
+	case reflect.Uint64:
+		return x.(uint64)
+	case reflect.Float32:
+		return float64(math.Abs(float64(x.(float32))))
+	case reflect.Float64:
+		return math.Abs(x.(float64))
+	case reflect.Complex64:
+		var y complex64 = x.(complex64)
+		return math.Hypot(float64(real(y)), float64(imag(y)))
+	case reflect.Complex128:
+		return cmplx.Abs(x.(complex128))
+	default:
+		msg := fmt.Sprintf("Abs: Unsupported type of %v", x)
+		panic(msg)
+	}
 }
