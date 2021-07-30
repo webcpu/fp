@@ -179,4 +179,78 @@ var _ = Describe("files", func() {
 			Ω(func(){Abs("abc")}).Should(Panic())
 		})
 	})
+
+	Context("Pow(x, y)", func() {
+		It("int", func() {
+			actual := Pow(3, 2)
+			expected := 9
+			Expect(actual).To(Equal(expected))
+		})
+
+		It("int", func() {
+			actual := Pow(-3, 2)
+			expected := 9
+			Expect(actual).To(Equal(expected))
+		})
+
+		It("int8", func() {
+			actual := Pow(int8(-3), int8(2))
+			expected := int8(9)
+			Expect(actual).To(Equal(expected))
+		})
+
+		It("int16", func() {
+			actual := Pow(int16(-3), int8(2))
+			expected := int16(9)
+			Expect(actual).To(Equal(expected))
+		})
+
+		It("int32", func() {
+			actual := Pow(int32(-3), int8(2))
+			expected := int32(9)
+			Expect(actual).To(Equal(expected))
+		})
+
+		It("int64", func() {
+			actual := Pow(int64(-3), int8(2))
+			expected := int64(9)
+			Expect(actual).To(Equal(expected))
+		})
+
+		It("uint8", func() {
+			actual := Pow(uint8(3), uint8(2))
+			expected := uint8(9)
+			Expect(actual).To(Equal(expected))
+		})
+
+		It("uint16", func() {
+			actual := Pow(uint16(3), uint8(2))
+			expected := uint16(9)
+			Expect(actual).To(Equal(expected))
+		})
+
+		It("uint32", func() {
+			actual := Pow(uint32(3), 2)
+			expected := uint32(9)
+			Expect(actual).To(Equal(expected))
+		})
+
+		It("uint64", func() {
+			actual := Pow(uint64(3), 2)
+			expected := uint64(9)
+			Expect(actual).To(Equal(expected))
+		})
+
+		It("complex64", func() {
+			var x complex64 = 3 + 4i
+			var y complex64 = 2
+			actual := Pow(x, y)
+			expected := complex(float32(-7), float32(24))
+			Expect(actual).To(Equal(expected))
+		})
+
+		It("string", func() {
+			Ω(func(){Pow("abc", 2)}).Should(Panic())
+		})
+	})
 })

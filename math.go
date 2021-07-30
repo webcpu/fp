@@ -111,7 +111,7 @@ func Abs( x interface{}) interface{} {
 		panic(msg)
 	}
 }
-
+var Power = Pow
 func Pow( x interface{}, y interface{}) interface{} {
 	if isIntegerFloat(x) && isIntegerFloat(y) {
 		return powForNumber(x, y)
@@ -122,12 +122,11 @@ func Pow( x interface{}, y interface{}) interface{} {
 			msg := fmt.Sprintf("Pow: %v and %v should be both complex64 or complex128", x, y)
 			panic(msg)
 		}
-		powerForComplex(x, y)
+		return powerForComplex(x, y)
 	} else {
 		msg := fmt.Sprintf("Pow: Unsupported type of %v", x)
 		panic(msg)
 	}
-	return x
 }
 
 func isComplex(x interface{}) bool {
@@ -138,7 +137,7 @@ func isComplex(x interface{}) bool {
 func powerForComplex(x interface{}, y interface{}) interface{} {
 	v := reflect.ValueOf(x)
 	if v.Kind() == reflect.Complex64 {
-		var x1 complex128 = complex128(complex(real(x.(complex64)), imag(y.(complex64))))
+		var x1 complex128 = complex128(complex(real(x.(complex64)), imag(x.(complex64))))
 		var y1 complex128 = complex128(complex(real(y.(complex64)), imag(y.(complex64))))
 		var c complex128 = cmplx.Pow(x1, y1)
 		return complex(float32(real(c)), float32(imag(c)))
