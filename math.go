@@ -1,6 +1,7 @@
 package fp
 
 import (
+	"errors"
 	"fmt"
 	"math"
 	"math/cmplx"
@@ -108,5 +109,146 @@ func Abs( x interface{}) interface{} {
 	default:
 		msg := fmt.Sprintf("Abs: Unsupported type of %v", x)
 		panic(msg)
+	}
+}
+
+func Pow( x interface{}, y interface{}) interface{} {
+	if isIntegerFloat(x) && isIntegerFloat(y) {
+		return powForNumber(x, y)
+	} else if isComplex(x) {
+		v1 := reflect.ValueOf(x)
+		v2 := reflect.ValueOf(y)
+		if v1.Kind() != v2.Kind() {
+			msg := fmt.Sprintf("Pow: %v and %v should be both complex64 or complex128", x, y)
+			panic(msg)
+		}
+		powerForComplex(x, y)
+	} else {
+		msg := fmt.Sprintf("Pow: Unsupported type of %v", x)
+		panic(msg)
+	}
+	return x
+}
+
+func isComplex(x interface{}) bool {
+	v := reflect.ValueOf(x)
+	return 	v.Kind() == reflect.Complex64 || v.Kind() == reflect.Complex128
+}
+
+func powerForComplex(x interface{}, y interface{}) interface{} {
+	v := reflect.ValueOf(x)
+	if v.Kind() == reflect.Complex64 {
+		var x1 complex128 = complex128(complex(real(x.(complex64)), imag(y.(complex64))))
+		var y1 complex128 = complex128(complex(real(y.(complex64)), imag(y.(complex64))))
+		var c complex128 = cmplx.Pow(x1, y1)
+		return complex(float32(real(c)), float32(imag(c)))
+	}
+	if v.Kind() == reflect.Complex128 {
+		return cmplx.Pow(x.(complex128), y.(complex128))
+	}
+
+	msg := fmt.Sprintf("Pow: Unsupported type of %v", x)
+	panic(msg)
+}
+
+func powForNumber(x interface{}, y interface{}) interface{} {
+	v := reflect.ValueOf(x)
+	switch v.Kind() {
+	case reflect.Int:
+		return int(_Pow(x, y))
+	case reflect.Int8:
+		return int8(_Pow(x, y))
+	case reflect.Int16:
+		return int16(_Pow(x, y))
+	case reflect.Int32:
+		return int32(_Pow(x, y))
+	case reflect.Int64:
+		return int64(_Pow(x, y))
+	case reflect.Uint:
+		return uint(_Pow(x, y))
+	case reflect.Uint8:
+		return uint8(_Pow(x, y))
+	case reflect.Uint16:
+		return uint16(_Pow(x, y))
+	case reflect.Uint32:
+		return uint32(_Pow(x, y))
+	case reflect.Uint64:
+		return uint64(_Pow(x, y))
+	case reflect.Float32:
+		return float32(_Pow(x, y))
+	case reflect.Float64:
+		return _Pow(x, y)
+	default:
+		panic("Should not happend")
+	}
+}
+
+func _Pow( x interface{}, y interface{}) float64 {
+	x1, _ := toFloat64(x)
+	y1, _ := toFloat64(y)
+	return math.Pow(x1, y1)
+}
+
+func toFloat64(x interface{}) (float64, error) {
+	v := reflect.ValueOf(x)
+	switch v.Kind() {
+	case reflect.Int:
+		return float64(x.(int)), nil
+	case reflect.Int8:
+		return float64(x.(int8)), nil
+	case reflect.Int16:
+		return float64(x.(int16)), nil
+	case reflect.Int32:
+		return float64(x.(int32)), nil
+	case reflect.Int64:
+		return float64(x.(int64)), nil
+	case reflect.Uint:
+		return float64(x.(uint)), nil
+	case reflect.Uint8:
+		return float64(x.(uint8)), nil
+	case reflect.Uint16:
+		return float64(x.(uint16)), nil
+	case reflect.Uint32:
+		return float64(x.(uint32)), nil
+	case reflect.Uint64:
+		return float64(x.(uint64)), nil
+	case reflect.Float32:
+		return float64(x.(float32)), nil
+	case reflect.Float64:
+		return x.(float64), nil
+	default:
+		return float64(0), errors.New("wrong type")
+	}
+}
+
+func isIntegerFloat(x interface{}) bool {
+	v := reflect.ValueOf(x)
+	switch v.Kind() {
+	case reflect.Int:
+		return true
+	case reflect.Int8:
+		return true
+	case reflect.Int16:
+		return true
+	case reflect.Int32:
+		return true
+	case reflect.Int64:
+		return true
+	case reflect.Uint:
+		return true
+	case reflect.Uint8:
+		return true
+	case reflect.Uint16:
+		return true
+	case reflect.Uint32:
+		return true
+	case reflect.Uint64:
+		return true
+	case reflect.Float32:
+		return true
+	case reflect.Float64:
+		return true
+	default:
+		return false
 	}
 }
