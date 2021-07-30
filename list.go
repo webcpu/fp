@@ -614,3 +614,37 @@ func Values(m interface{}) interface{} {
 	}
 	return xs.Interface()
 }
+
+func Union(lists... interface{}) interface{} {
+	if len(lists) == 0 {
+		return []interface{}{}
+	}
+
+	for i := 0; i < len(lists); i++ {
+		sv := reflect.ValueOf(lists[i])
+		mustBeArraySlice(sv)
+	}
+
+	var elementType = reflect.ValueOf(lists[0]).Type().Elem()
+	for i := 1; i < len(lists); i++ {
+		sv := reflect.ValueOf(lists[i])
+		if sv.Type().Elem() != elementType {
+			msg := fmt.Sprintf("Union: %v's type should as same as %v's type.", lists[i], lists[0])
+			panic(msg)
+		}
+	}
+
+	mapType := reflect.MapOf(elementType, reflect.TypeOf(true))
+	m := reflect.MakeMap(mapType)
+
+	value := reflect.ValueOf(true)
+	for i := 0; i < len(lists); i++ {
+		sv := reflect.ValueOf(lists[i])
+		for j := 0; j < sv.Len(); j++ {
+			key := sv.Index(j)
+			m.SetMapIndex(key, value)
+		}
+	}
+
+	return Keys(m.Interface())
+}

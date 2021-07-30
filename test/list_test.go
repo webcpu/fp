@@ -684,4 +684,50 @@ var _ = Describe("list", func() {
 			Expect(Sort(Values(m))).To(Equal([]int{1, 2}))
 		})
 	})
+
+	Context("Union(list1, list2...)", func() {
+		It("[]int", func() {
+			xs := []int{1,2,2,3}
+			actual := Union(xs)
+			expected := []int{1,2,3}
+			Expect(Sort(actual)).To(Equal(expected))
+		})
+
+		It("[]int, []int", func() {
+			xs := []int{1,2,2,3}
+			ys := []int{1,2,3,3,4}
+			actual := Sort(Union(xs, ys))
+			expected := []int{1,2,3,4}
+			Expect(actual).To(Equal(expected))
+		})
+
+		It("[]int, []int, float32[]", func() {
+			xs := []int{1,2,2,3}
+			ys := []int{1,2,3,3,4}
+			zs := []float32{1,2,3,3,4}
+			Ω(func(){Union(xs,ys,zs)}).Should(Panic())
+		})
+
+		It("[]int", func() {
+			type Person struct {
+				name string
+				age int
+			}
+			xs := []Person{
+				Person{name:"a1", age: 10},
+				Person{name:"a1", age: 10},
+				Person{name:"c1", age: 15},
+			}
+
+			ys := []Person{
+				Person{name:"a1", age: 10},
+				Person{name:"c1", age: 15},
+			}
+
+			actual := Union(xs)
+			expected := ys
+			less := func(p1 interface{}, p2 interface{}) bool { return p1.(Person).name < p2.(Person).name }
+			Expect(Sort(actual, less)).To(Equal(expected))
+		})
+	})
 })
