@@ -360,6 +360,38 @@ var _ = Describe("list", func() {
 		})
 	})
 
+	Context("Most(list)", func() {
+		It("[]int", func() {
+			xs := Range(5)
+			actual := Most(xs)
+			expected := []int{1, 2, 3, 4}
+			Expect(actual).To(Equal(expected))
+		})
+
+		It("[]string", func() {
+			xs := []string{"abc", "def"}
+			actual := Most(xs)
+			expected := []string{"abc"}
+			Expect(actual).To(Equal(expected))
+		})
+	})
+
+	Context("Rest(list)", func() {
+		It("[]int", func() {
+			xs := Range(5)
+			actual := Rest(xs)
+			expected := Range(2, 5)
+			Expect(actual).To(Equal(expected))
+		})
+
+		It("[]string", func() {
+			xs := []string{"abc", "def"}
+			actual := Rest(xs)
+			expected := []string{"def"}
+			Expect(actual).To(Equal(expected))
+		})
+	})
+
 	Context("Length(expr)", func() {
 		It("gives the numbers of elements in expr.", func() {
 			xs := Range(5)

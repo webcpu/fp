@@ -339,6 +339,26 @@ func Take(slice interface{}, n int) interface{} {
 	return ys.Interface()
 }
 
+func Most(slice interface{}) interface{} {
+	if Length(slice) == 0 {
+		msg := fmt.Sprintf("Most: Cannot take Most of expression %v with length zero.", slice)
+		panic(msg)
+	}
+	sv := reflect.ValueOf(slice)
+	mustBeArraySlice(sv)
+	return Take(slice, sv.Len()-1)
+}
+
+func Rest(slice interface{}) interface{} {
+	if Length(slice) == 0 {
+		msg := fmt.Sprintf("Rest: Cannot take Most of expression %v with length zero.", slice)
+		panic(msg)
+	}
+	sv := reflect.ValueOf(slice)
+	mustBeArraySlice(sv)
+	return Drop(slice, 1)
+}
+
 func Drop(slice interface{}, n int) interface{} {
 	if Length(slice) < int(math.Abs(float64(n))) {
 		msg := fmt.Sprintf("Drop: %v has zero length and no first element.", slice)
