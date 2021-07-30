@@ -249,6 +249,14 @@ var _ = Describe("files", func() {
 			Expect(actual).To(Equal(expected))
 		})
 
+		It("complex64", func() {
+			var x complex64 = 3 + 4i
+			var y int = 2
+			actual := Pow(x, y)
+			expected := complex(float32(-7), float32(24))
+			Expect(actual).To(Equal(expected))
+		})
+
 		It("string", func() {
 			Ω(func(){Pow("abc", 2)}).Should(Panic())
 		})

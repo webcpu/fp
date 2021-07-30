@@ -116,12 +116,6 @@ func Pow( x interface{}, y interface{}) interface{} {
 	if isIntegerFloat(x) && isIntegerFloat(y) {
 		return powForNumber(x, y)
 	} else if isComplex(x) {
-		v1 := reflect.ValueOf(x)
-		v2 := reflect.ValueOf(y)
-		if v1.Kind() != v2.Kind() {
-			msg := fmt.Sprintf("Pow: %v and %v should be both complex64 or complex128", x, y)
-			panic(msg)
-		}
 		return powerForComplex(x, y)
 	} else {
 		msg := fmt.Sprintf("Pow: Unsupported type of %v", x)
@@ -134,7 +128,57 @@ func isComplex(x interface{}) bool {
 	return 	v.Kind() == reflect.Complex64 || v.Kind() == reflect.Complex128
 }
 
+func normalize(x interface{}, y interface{}) (interface{}, interface{})  {
+	if !(isIntegerFloat(y) || isComplex(y)) {
+		msg := fmt.Sprintf("Pow: %v and %v should be both complex64 or complex128", x, y)
+		panic(msg)
+	}
+	vx := reflect.ValueOf(x)
+	if vx.Kind() == reflect.Complex64 {
+		return normalizeComplex64(x, y)
+	}
+	if vx.Kind() == reflect.Complex128 {
+		return normalizeComplex128(x, y)
+	}
+	return nil, nil
+}
+
+func normalizeComplex128(x interface{}, y interface{}) (interface{}, interface{}) {
+	vy := reflect.ValueOf(y)
+	if isIntegerFloat(y) {
+		r, _ := toFloat64(y)
+		y1 := complex(r, 0)
+		return x, y1
+	} else if isComplex(y) {
+		if vy.Kind() == reflect.Complex64 {
+			y1 := complex(float32(real(y.(complex64))), float32(imag(y.(complex64))))
+			return x, y1
+		} else {
+			return x, y
+		}
+	}
+	return nil, nil
+}
+
+func normalizeComplex64(x interface{}, y interface{}) (interface{}, interface{}) {
+	vy := reflect.ValueOf(y)
+	if isIntegerFloat(y) {
+		r, _ := toFloat32(y)
+		y1 := complex(r, 0)
+		return x.(complex64), y1
+	} else if isComplex(y) {
+		if vy.Kind() == reflect.Complex64 {
+			return x, y
+		} else {
+			y1 := complex(float32(real(y.(complex128))), float32(imag(y.(complex128))))
+			return x, y1
+		}
+	}
+	return nil, nil
+}
+
 func powerForComplex(x interface{}, y interface{}) interface{} {
+	x, y = normalize(x, y)
 	v := reflect.ValueOf(x)
 	if v.Kind() == reflect.Complex64 {
 		var x1 complex128 = complex128(complex(real(x.(complex64)), imag(x.(complex64))))
@@ -217,6 +261,38 @@ func toFloat64(x interface{}) (float64, error) {
 		return x.(float64), nil
 	default:
 		return float64(0), errors.New("wrong type")
+	}
+}
+
+func toFloat32(x interface{}) (float32, error) {
+	v := reflect.ValueOf(x)
+	switch v.Kind() {
+	case reflect.Int:
+		return float32(x.(int)), nil
+	case reflect.Int8:
+		return float32(x.(int8)), nil
+	case reflect.Int16:
+		return float32(x.(int16)), nil
+	case reflect.Int32:
+		return float32(x.(int32)), nil
+	case reflect.Int64:
+		return float32(x.(int64)), nil
+	case reflect.Uint:
+		return float32(x.(uint)), nil
+	case reflect.Uint8:
+		return float32(x.(uint8)), nil
+	case reflect.Uint16:
+		return float32(x.(uint16)), nil
+	case reflect.Uint32:
+		return float32(x.(uint32)), nil
+	case reflect.Uint64:
+		return float32(x.(uint64)), nil
+	case reflect.Float32:
+		return float32(x.(float32)), nil
+	case reflect.Float64:
+		return x.(float32), nil
+	default:
+		return float32(0), errors.New("wrong type")
 	}
 }
 
