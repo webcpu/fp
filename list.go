@@ -619,7 +619,11 @@ func Union(lists... interface{}) interface{} {
 	if len(lists) == 0 {
 		return []interface{}{}
 	}
+	checkUnionArguments(lists)
+	return _Union(lists)
+}
 
+func checkUnionArguments(lists []interface{}) {
 	for i := 0; i < len(lists); i++ {
 		sv := reflect.ValueOf(lists[i])
 		mustBeArraySlice(sv)
@@ -633,18 +637,80 @@ func Union(lists... interface{}) interface{} {
 			panic(msg)
 		}
 	}
+}
 
+func _Union(lists []interface{}) interface{} {
+	var elementType = reflect.ValueOf(lists[0]).Type().Elem()
 	mapType := reflect.MapOf(elementType, reflect.TypeOf(true))
 	m := reflect.MakeMap(mapType)
 
-	value := reflect.ValueOf(true)
+	existed := reflect.ValueOf(true)
+	zeroValue := reflect.Value{}
+	keys := makeKeys(lists, elementType)
 	for i := 0; i < len(lists); i++ {
 		sv := reflect.ValueOf(lists[i])
 		for j := 0; j < sv.Len(); j++ {
 			key := sv.Index(j)
-			m.SetMapIndex(key, value)
+			if m.MapIndex(key) == zeroValue {
+				keys = reflect.Append(keys, key)
+			}
+			m.SetMapIndex(key, existed)
+		}
+	}
+	return keys.Interface()
+}
+
+func makeKeys(lists []interface{}, elementType reflect.Type) reflect.Value {
+	var capacity int = 0
+	for i := 0; i < len(lists); i++ {
+		sv := reflect.ValueOf(lists[i])
+		capacity += sv.Len()
+	}
+	keys := reflect.MakeSlice(reflect.SliceOf(elementType), 0, capacity)
+	return keys
+}
+
+func DeleteDuplicates(args... interface{}) interface{} {
+	if len(args) > 2 {
+		msg := fmt.Sprintf("DeleteDuplicates: DeleteDuplicates called with %v arguments; between 1 and 3 arguments are expected.", len(args))
+		panic(msg)
+	}
+
+	sv := reflect.ValueOf(args[0])
+	elementType := sv.Type().Elem()
+	for i := 0; i < len(args); i++ {
+		if i == 0 {
+			mustBeArraySlice(reflect.ValueOf(args[0]))
+		}
+		if i == 1 {
+			fv := reflect.ValueOf(args[1])
+			mustBeFuncSignature(sv, fv, 1, elementType, elementType, reflect.TypeOf(true))
 		}
 	}
 
-	return Keys(m.Interface())
+	if len(args) == 1 {
+		return Union(args[0])
+	}
+
+	keys := reflect.MakeSlice(reflect.SliceOf(elementType), 0, sv.Len())
+	fv := reflect.ValueOf(args[1])
+	for i := 0; i < sv.Len(); i++ {
+		key := sv.Index(i)
+		var ins [2]reflect.Value
+		ins[1] = key
+		var found = false
+		for j := 0; j < keys.Len(); j++ {
+			ins[0] = keys.Index(j)
+			r := fv.Call(ins[:])[0].Interface()
+			if r == true {
+				found = true
+				break
+			}
+		}
+		if !found {
+			keys = reflect.Append(keys, key)
+		}
+	}
+
+	return keys.Interface()
 }

@@ -687,16 +687,16 @@ var _ = Describe("list", func() {
 
 	Context("Union(list1, list2...)", func() {
 		It("[]int", func() {
-			xs := []int{1,2,2,3}
+			xs := []int{1,3,2,2}
 			actual := Union(xs)
-			expected := []int{1,2,3}
-			Expect(Sort(actual)).To(Equal(expected))
+			expected := []int{1,3,2}
+			Expect(actual).To(Equal(expected))
 		})
 
 		It("[]int, []int", func() {
 			xs := []int{1,2,2,3}
 			ys := []int{1,2,3,3,4}
-			actual := Sort(Union(xs, ys))
+			actual := Union(xs, ys)
 			expected := []int{1,2,3,4}
 			Expect(actual).To(Equal(expected))
 		})
@@ -726,8 +726,32 @@ var _ = Describe("list", func() {
 
 			actual := Union(xs)
 			expected := ys
-			less := func(p1 interface{}, p2 interface{}) bool { return p1.(Person).name < p2.(Person).name }
-			Expect(Sort(actual, less)).To(Equal(expected))
+			Expect(actual).To(Equal(expected))
+		})
+	})
+
+	Context("DeleteDuplicates(list, test)", func() {
+		It("[]int", func() {
+			xs := []int{1, 2, 2, 3}
+			actual := DeleteDuplicates(xs)
+			expected := []int{1, 2, 3}
+			Expect(actual).To(Equal(expected))
+		})
+
+		It("[]int", func() {
+			xs := []int{1, 1, 2, 2, 3}
+			//lessThan3 := func(x interface{}, y interface{}) bool { return Abs(x.(int)-y.(int)) == 1}
+			lessThan3 := func(x int, y int) bool { return Abs(x-y) == 1}
+			actual := DeleteDuplicates(xs, lessThan3)
+			expected := []int{1, 1, 3}
+			Expect(actual).To(Equal(expected))
+		})
+
+		It("[]string", func() {
+			xs := []string{"abc", "abc", "def", "def"}
+			actual := DeleteDuplicates(xs)
+			expected := []string{"abc", "def"}
+			Expect(actual).To(Equal(expected))
 		})
 	})
 })
