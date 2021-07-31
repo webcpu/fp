@@ -680,25 +680,23 @@ func DeleteDuplicates(args... interface{}) interface{} {
 
 	if len(args) == 1 {
 		return Union(args[0])
+	} else {
+		return _DeleteDuplicates(args[0], args[1])
 	}
-
-	return _DeleteDuplicates(args[0], args[1])
 }
 
 func checkDeleteDuplicatesArguments(args []interface{}) {
-	if len(args) > 2 {
-		msg := fmt.Sprintf("DeleteDuplicates: DeleteDuplicates called with %v arguments; between 1 and 3 arguments are expected.", len(args))
-		panic(msg)
-	}
-
-	sv := reflect.ValueOf(args[0])
-	elementType := sv.Type().Elem()
-	if len(args) == 1 {
+	switch len(args) {
+	case 1:
 		mustBeArraySlice(reflect.ValueOf(args[0]))
-	}
-	if len(args) == 2 {
+	case 2:
+		sv := reflect.ValueOf(args[0])
+		elementType := sv.Type().Elem()
 		fv := reflect.ValueOf(args[1])
 		mustBeFuncSignature(sv, fv, 1, elementType, elementType, reflect.TypeOf(true))
+	default:
+		msg := fmt.Sprintf("DeleteDuplicates: DeleteDuplicates called with %v arguments; between 1 and 2 arguments are expected.", len(args))
+		panic(msg)
 	}
 }
 
@@ -734,4 +732,119 @@ func isDuplicate(sv reflect.Value, i int, keys reflect.Value, fv reflect.Value) 
 		}
 	}
 	return key, found
+}
+
+func Intersection(args... interface{}) interface{} {
+	if len(args) == 0 {
+		return []interface{}{}
+	}
+	checkIntersectionArguments(args)
+
+	fv := reflect.ValueOf(args[len(args)-1])
+	if fv.Kind() == reflect.Func {
+		return _IntersectionBy(args[:(len(args)-1)], args[len(args)-1])
+	} else {
+		return _Intersection(args)
+	}
+}
+
+func _Intersection(lists []interface{}) interface{} {
+	var elementType = reflect.ValueOf(lists[0]).Type().Elem()
+	mapType := reflect.MapOf(elementType, reflect.TypeOf(true))
+
+	m := reflect.MakeMap(mapType)
+	keys := makeKeys(lists, elementType)
+	for i := 0; i < len(lists); i++ {
+		commonKeys := makeKeys([]interface{}{lists[i]}, elementType)
+		commonMap := reflect.MakeMap(mapType)
+		sv := reflect.ValueOf(lists[i])
+		for j := 0; j < sv.Len(); j++ {
+			key := sv.Index(j)
+			value := m.MapIndex(key)
+			if i == 0 {
+				if !value.IsValid() || value.IsZero() {
+					commonMap.SetMapIndex(key, reflect.ValueOf(true))
+					commonKeys = reflect.Append(commonKeys, key)
+				}
+			} else {
+				if value.IsValid() && value.Interface().(bool) {
+					v := commonMap.MapIndex(key)
+					if !v.IsValid() {
+						commonMap.SetMapIndex(key, reflect.ValueOf(true))
+						commonKeys = reflect.Append(commonKeys, key)
+					}
+				}
+			}
+		}
+		m = commonMap
+		keys = commonKeys
+	}
+	return keys.Interface()
+}
+
+func _IntersectionBy(lists []interface{}, f interface{}) interface{} {
+	var elementType = reflect.ValueOf(lists[0]).Type().Elem()
+
+	fv := reflect.ValueOf(f)
+	keys := makeKeys(lists, elementType)
+	for i := 0; i < len(lists); i++ {
+		sv := reflect.ValueOf(lists[i])
+		key, found := isDuplicate(sv, i, keys, fv)
+		if !found {
+			keys = reflect.Append(keys, key)
+		}
+	}
+	return keys.Interface()
+}
+
+//func appendIfNotDuplicate(sv reflect.Value, i int, keys reflect.Value, fv reflect.Value) reflect.Value {
+//	key, found := isDuplicate(sv, i, keys, fv)
+//	if !found {
+//		keys = reflect.Append(keys, key)
+//	}
+//	return keys
+//}
+
+func checkIntersectionArguments(args []interface{}) {
+	switch len(args) {
+	case 0:
+		msg := fmt.Sprintf("Intersection: Intersection called with %v arguments; at least one argument is expected.", len(args))
+		panic(msg)
+	case 1:
+		mustBeArraySlice(reflect.ValueOf(args[0]))
+	default:
+		var lists []interface{} = getListsArguments(args)
+		checkIntersectionListsArguments(lists)
+		checkIntersectionFuncArguments(args)
+	}
+}
+
+func getListsArguments(args []interface{}) []interface{} {
+	fv := reflect.ValueOf(args[len(args)-1])
+	if fv.Kind() == reflect.Func {
+		return args[:(len(args)-1)]
+	} else {
+		return args
+	}
+}
+
+func checkIntersectionFuncArguments(args []interface{}) {
+	fv := reflect.ValueOf(args[len(args)-1])
+	if fv.Kind() == reflect.Func {
+		sv := reflect.ValueOf(args[0])
+		elementType := sv.Type().Elem()
+		mustBeFuncSignature(sv, fv, 1, elementType, elementType, reflect.TypeOf(true))
+	}
+}
+
+func checkIntersectionListsArguments(lists []interface{}) reflect.Type {
+	var elementType = reflect.ValueOf(lists[0]).Type().Elem()
+	for i := 1; i < len(lists); i++ {
+		sv := reflect.ValueOf(lists[i])
+		if sv.Type().Elem() != elementType {
+			msg := fmt.Sprintf("Union: %v's type should as same as %v's type.", lists[i], lists[0])
+			panic(msg)
+		}
+	}
+	return elementType
 }

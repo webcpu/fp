@@ -509,83 +509,6 @@ var _ = Describe("list", func() {
 		})
 	})
 
-	Context("Sort(expr)", func() {
-		It("sorts the elements of list into canonical order.", func() {
-			xs := []int{3, 1, 2, 5}
-			actual := Sort(xs)
-			expected := []int{1, 2, 3, 5}
-			Expect(actual).To(Equal(expected))
-		})
-
-		It("sorts the elements of list into canonical order.", func() {
-			xs := []int{3, 1, 2, 5}
-			actual := Sort(xs, Greater)
-			expected := []int{5, 3, 2, 1}
-			Expect(actual).To(Equal(expected))
-		})
-
-		It("sorts the elements of list into canonical order.", func() {
-			xs := []int{3, 1, 2, 5}
-			less := func(a, b interface{}) bool { return a.(int) < b.(int) }
-			actual := Sort(xs, less)
-			expected := []int{1, 2, 3, 5}
-			Expect(actual).To(Equal(expected))
-		})
-
-		It("sorts the elements of list into canonical order.", func() {
-			xs := []string{"bc", "cd", "ab"}
-			actual := Sort(xs)
-			expected := []string{"ab", "bc", "cd"}
-			Expect(actual).To(Equal(expected))
-		})
-
-		It("sorts the elements of list into canonical order.", func() {
-			xs := []string{"bc", "cd", "ab"}
-			less := func(a, b interface{}) bool { return a.(string) < b.(string) }
-			actual := Sort(xs, less)
-			expected := []string{"ab", "bc", "cd"}
-			Expect(actual).To(Equal(expected))
-		})
-	})
-
-	Context("Sort(expr)", func() {
-		type Person struct {
-			name string
-			age int
-		}
-		xs := []Person{
-			Person{name:"b1", age: 10},
-			Person{name:"a1", age: 20},
-			Person{name:"c1", age: 15},
-		}
-
-		It("sorts the elements of list into canonical order.", func() {
-			Ω(func() { Sort(xs) }).Should(Panic())
-		})
-
-		It("sorts the elements of list into canonical order.", func() {
-			less := func(a , b interface{}) bool { return a.(Person).name < b.(Person).name }
-			actual := Sort(xs, less)
-			expected := []Person {
-				Person{name:"a1", age: 20},
-				Person{name:"b1", age: 10},
-				Person{name:"c1", age: 15},
-			}
-			Expect(actual).To(Equal(expected))
-		})
-
-		It("sorts the elements of list into canonical order.", func() {
-			less := func(a , b interface{}) bool { return a.(Person).age < b.(Person).age}
-			actual := Sort(xs, less)
-			expected := []Person {
-				Person{name:"b1", age: 10},
-				Person{name:"c1", age: 15},
-				Person{name:"a1", age: 20},
-			}
-			Expect(actual).To(Equal(expected))
-		})
-	})
-
 	Context("Reverse(expr)", func() {
 		It("array", func() {
 			xs := [10]int{0,1,2,3,4,5,6,7,8,9}
@@ -708,7 +631,7 @@ var _ = Describe("list", func() {
 			Ω(func(){Union(xs,ys,zs)}).Should(Panic())
 		})
 
-		It("[]int", func() {
+		It("[]Person", func() {
 			type Person struct {
 				name string
 				age int
@@ -751,6 +674,97 @@ var _ = Describe("list", func() {
 			xs := []string{"abc", "abc", "def", "def"}
 			actual := DeleteDuplicates(xs)
 			expected := []string{"abc", "def"}
+			Expect(actual).To(Equal(expected))
+		})
+
+		It("[]Person", func() {
+			type Person struct {
+				name string
+				age int
+			}
+			xs := []Person{
+				Person{name:"a1", age: 10},
+				Person{name:"a1", age: 10},
+				Person{name:"c1", age: 15},
+			}
+
+			ys := []Person{
+				Person{name:"a1", age: 10},
+				Person{name:"c1", age: 15},
+			}
+
+			actual := DeleteDuplicates(xs)
+			expected := ys
+			Expect(actual).To(Equal(expected))
+		})
+
+		It("[]Person", func() {
+			type Person struct {
+				name string
+				age int
+			}
+			xs := []Person{
+				Person{name:"a1", age: 10},
+				Person{name:"b1", age: 10},
+				Person{name:"c1", age: 15},
+			}
+
+			ys := []Person{
+				Person{name:"a1", age: 10},
+				Person{name:"c1", age: 15},
+			}
+
+			SameAgeQ := func(p1, p2 Person) bool {return p1.age == p2.age}
+			actual := DeleteDuplicates(xs, SameAgeQ)
+			expected := ys
+			Expect(actual).To(Equal(expected))
+		})
+	})
+
+	Context("Intersection(list1, list2...)", func() {
+		It("[]int", func() {
+			xs := []int{1, 2}
+			ys := []int{2, 3}
+			actual := Intersection(xs, ys)
+			expected := []int{2}
+			Expect(actual).To(Equal(expected))
+		})
+
+		It("[]int, []int", func() {
+			xs := []int{1, 2, 2, 3}
+			ys := []int{1, 2, 3, 3, 4}
+			actual := Intersection(xs, ys)
+			expected := []int{1, 2, 3}
+			Expect(actual).To(Equal(expected))
+		})
+
+		It("[]int, []int, []int", func() {
+			xs := []int{1, 2, 2, 3}
+			ys := []int{1, 2, 3, 3, 4}
+			zs := []int{3, 4, 5}
+			actual := Intersection(xs, ys, zs)
+			expected := []int{3}
+			Expect(actual).To(Equal(expected))
+		})
+
+		It("[]Person, []Person", func() {
+			type Person struct {
+				name string
+				age int
+			}
+			xs := []Person{
+				Person{name:"a1", age: 10},
+				Person{name:"a1", age: 10},
+				Person{name:"c1", age: 15},
+			}
+
+			ys := []Person{
+				Person{name:"a1", age: 10},
+				Person{name:"c1", age: 15},
+			}
+
+			actual := Intersection(xs, ys)
+			expected := ys
 			Expect(actual).To(Equal(expected))
 		})
 	})
