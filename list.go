@@ -644,20 +644,25 @@ func _Union(lists []interface{}) interface{} {
 	mapType := reflect.MapOf(elementType, reflect.TypeOf(true))
 	m := reflect.MakeMap(mapType)
 
-	existed := reflect.ValueOf(true)
-	zeroValue := reflect.Value{}
 	keys := makeKeys(lists, elementType)
 	for i := 0; i < len(lists); i++ {
 		sv := reflect.ValueOf(lists[i])
-		for j := 0; j < sv.Len(); j++ {
-			key := sv.Index(j)
-			if m.MapIndex(key) == zeroValue {
-				keys = reflect.Append(keys, key)
-			}
-			m.SetMapIndex(key, existed)
-		}
+		keys = appendIfNotInMap(keys, m, sv)
 	}
 	return keys.Interface()
+}
+
+func appendIfNotInMap(keys reflect.Value, m reflect.Value, sv reflect.Value) reflect.Value {
+	existed := reflect.ValueOf(true)
+	zeroValue := reflect.Value{}
+	for j := 0; j < sv.Len(); j++ {
+		key := sv.Index(j)
+		if m.MapIndex(key) == zeroValue {
+			keys = reflect.Append(keys, key)
+		}
+		m.SetMapIndex(key, existed)
+	}
+	return keys
 }
 
 func makeKeys(lists []interface{}, elementType reflect.Type) reflect.Value {
@@ -671,6 +676,16 @@ func makeKeys(lists []interface{}, elementType reflect.Type) reflect.Value {
 }
 
 func DeleteDuplicates(args... interface{}) interface{} {
+	checkDeleteDuplicatesArguments(args)
+
+	if len(args) == 1 {
+		return Union(args[0])
+	}
+
+	return _DeleteDuplicates(args[0], args[1])
+}
+
+func checkDeleteDuplicatesArguments(args []interface{}) {
 	if len(args) > 2 {
 		msg := fmt.Sprintf("DeleteDuplicates: DeleteDuplicates called with %v arguments; between 1 and 3 arguments are expected.", len(args))
 		panic(msg)
@@ -678,39 +693,45 @@ func DeleteDuplicates(args... interface{}) interface{} {
 
 	sv := reflect.ValueOf(args[0])
 	elementType := sv.Type().Elem()
-	for i := 0; i < len(args); i++ {
-		if i == 0 {
-			mustBeArraySlice(reflect.ValueOf(args[0]))
-		}
-		if i == 1 {
-			fv := reflect.ValueOf(args[1])
-			mustBeFuncSignature(sv, fv, 1, elementType, elementType, reflect.TypeOf(true))
-		}
-	}
-
 	if len(args) == 1 {
-		return Union(args[0])
+		mustBeArraySlice(reflect.ValueOf(args[0]))
 	}
+	if len(args) == 2 {
+		fv := reflect.ValueOf(args[1])
+		mustBeFuncSignature(sv, fv, 1, elementType, elementType, reflect.TypeOf(true))
+	}
+}
 
+func _DeleteDuplicates(list interface{}, f interface{}) interface{} {
+	sv := reflect.ValueOf(list)
+	elementType := sv.Type().Elem()
 	keys := reflect.MakeSlice(reflect.SliceOf(elementType), 0, sv.Len())
-	fv := reflect.ValueOf(args[1])
+	fv := reflect.ValueOf(f)
 	for i := 0; i < sv.Len(); i++ {
-		key := sv.Index(i)
-		var ins [2]reflect.Value
-		ins[1] = key
-		var found = false
-		for j := 0; j < keys.Len(); j++ {
-			ins[0] = keys.Index(j)
-			r := fv.Call(ins[:])[0].Interface()
-			if r == true {
-				found = true
-				break
-			}
-		}
-		if !found {
-			keys = reflect.Append(keys, key)
-		}
+		keys = appendIfNotDuplicate(sv, i, keys, fv)
 	}
 
 	return keys.Interface()
+}
+
+func appendIfNotDuplicate(sv reflect.Value, i int, keys reflect.Value, fv reflect.Value) reflect.Value {
+	key, found := isDuplicate(sv, i, keys, fv)
+	if !found {
+		keys = reflect.Append(keys, key)
+	}
+	return keys
+}
+
+func isDuplicate(sv reflect.Value, i int, keys reflect.Value, fv reflect.Value) (reflect.Value, bool) {
+	key := sv.Index(i)
+	var found = false
+	for j := 0; j < keys.Len(); j++ {
+		ins := [2]reflect.Value{keys.Index(j), key}
+		r := fv.Call(ins[:])[0].Interface()
+		if r == true {
+			found = true
+			break
+		}
+	}
+	return key, found
 }
