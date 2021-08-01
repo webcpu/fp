@@ -706,32 +706,33 @@ func _DeleteDuplicates(list interface{}, f interface{}) interface{} {
 	keys := reflect.MakeSlice(reflect.SliceOf(elementType), 0, sv.Len())
 	fv := reflect.ValueOf(f)
 	for i := 0; i < sv.Len(); i++ {
-		keys = appendIfNotDuplicate(sv, i, keys, fv)
+		keys = appendIfNotDuplicate(sv.Index(i), keys, fv)
 	}
 
 	return keys.Interface()
 }
 
-func appendIfNotDuplicate(sv reflect.Value, i int, keys reflect.Value, fv reflect.Value) reflect.Value {
-	key, found := isDuplicate(sv, i, keys, fv)
+func appendIfNotDuplicate(elem reflect.Value, keys reflect.Value, fv reflect.Value) reflect.Value {
+	key, found := isDuplicate(elem, keys, fv)
 	if !found {
 		keys = reflect.Append(keys, key)
 	}
 	return keys
 }
 
-func isDuplicate(sv reflect.Value, i int, keys reflect.Value, fv reflect.Value) (reflect.Value, bool) {
-	key := sv.Index(i)
+func isDuplicate(elem reflect.Value, slice reflect.Value, fv reflect.Value) (reflect.Value, bool) {
+	result := elem
 	var found = false
-	for j := 0; j < keys.Len(); j++ {
-		ins := [2]reflect.Value{keys.Index(j), key}
+	for j := 0; j < slice.Len(); j++ {
+		ins := [2]reflect.Value{slice.Index(j), elem}
 		r := fv.Call(ins[:])[0].Interface()
 		if r == true {
+			result = elem
 			found = true
 			break
 		}
 	}
-	return key, found
+	return result, found
 }
 
 func Intersection(args... interface{}) interface{} {
@@ -753,7 +754,7 @@ func _Intersection(lists []interface{}) interface{} {
 	mapType := reflect.MapOf(elementType, reflect.TypeOf(true))
 
 	m := reflect.MakeMap(mapType)
-	keys := makeKeys(lists, elementType)
+	keys := reflect.MakeSlice(reflect.SliceOf(elementType), 0, 0)
 	for i := 0; i < len(lists); i++ {
 		commonKeys := makeKeys([]interface{}{lists[i]}, elementType)
 		commonMap := reflect.MakeMap(mapType)
@@ -784,26 +785,67 @@ func _Intersection(lists []interface{}) interface{} {
 
 func _IntersectionBy(lists []interface{}, f interface{}) interface{} {
 	var elementType = reflect.ValueOf(lists[0]).Type().Elem()
-
 	fv := reflect.ValueOf(f)
-	keys := makeKeys(lists, elementType)
-	for i := 0; i < len(lists); i++ {
-		sv := reflect.ValueOf(lists[i])
-		key, found := isDuplicate(sv, i, keys, fv)
-		if !found {
-			keys = reflect.Append(keys, key)
-		}
-	}
-	return keys.Interface()
+	results := intersectFirstList(lists[0], elementType, fv)
+	fmt.Printf("first: %v\n", results.Interface())
+	results = intersectRestLists(lists[:(len(lists)-1)], elementType, fv, results)
+	fmt.Printf("rest: %v\n", results.Interface())
+	return results.Interface()
 }
 
-//func appendIfNotDuplicate(sv reflect.Value, i int, keys reflect.Value, fv reflect.Value) reflect.Value {
-//	key, found := isDuplicate(sv, i, keys, fv)
-//	if !found {
-//		keys = reflect.Append(keys, key)
-//	}
-//	return keys
-//}
+func intersectFirstList(list interface{}, elementType reflect.Type, fv reflect.Value) reflect.Value {
+	sv := reflect.ValueOf(list)
+	keys := reflect.MakeSlice(reflect.SliceOf(elementType), 0, 0)
+	for j := 0; j < sv.Len(); j++ {
+		key := sv.Index(j)
+		index, _, found := isDuplicateKey(key, keys, fv)
+		if !found {
+			keys = reflect.Append(keys, key)
+		} else {
+			keys.Index(index).Set(key)
+		}
+	}
+	return keys
+}
+
+func intersectRestLists(lists []interface{}, elementType reflect.Type, fv reflect.Value, results reflect.Value) reflect.Value {
+	for i := 0; i < len(lists); i++ {
+		results = intersectList(lists, elementType, fv, results, i)
+	}
+	return results
+}
+
+func intersectList(lists []interface{}, elementType reflect.Type, fv reflect.Value, results reflect.Value, i int) reflect.Value {
+	keys := reflect.MakeSlice(reflect.SliceOf(elementType), 0, 0)
+	sv := reflect.ValueOf(lists[i])
+	for j := 0; j < sv.Len(); j++ {
+		_, key, found1 := isDuplicateKey(sv.Index(j), results, fv)
+		if found1 {
+			_, _, found2 := isDuplicateKey(key, keys, fv)
+			if !found2 {
+				keys = reflect.Append(keys, key)
+			}
+		}
+	}
+	return keys
+}
+
+func isDuplicateKey(key, keys reflect.Value, fv reflect.Value) (int, reflect.Value, bool) {
+	result := key
+	var found = false
+	var index = -1
+	for j := 0; j < keys.Len(); j++ {
+		ins := [2]reflect.Value{keys.Index(j), key}
+		r := fv.Call(ins[:])[0].Interface()
+		if r == true {
+			result = keys.Index(j)
+			found = true
+			index = j
+			break
+		}
+	}
+	return index, result, found
+}
 
 func checkIntersectionArguments(args []interface{}) {
 	switch len(args) {

@@ -768,4 +768,25 @@ var _ = Describe("list", func() {
 			Expect(actual).To(Equal(expected))
 		})
 	})
+
+	Context("Intersection(list1..., f)", func() {
+		It("[]int", func() {
+			xs := []int{1, 2, 3, 4}
+
+			f := func(x int, y int) bool { return Abs(x-y) == 1}
+			actual := Intersection(xs, f)
+			expected := []int{4}
+			Expect(actual).To(Equal(expected))
+		})
+
+		It("[]int, []int", func() {
+			xs := []int{1, 2}
+			ys := []int{2, 3}
+
+			f := func(x int, y int) bool { return Abs(x-y) == 1}
+			actual := Intersection(xs, ys, f)
+			expected := []int{2}
+			Expect(actual).To(Equal(expected))
+		})
+	})
 })
