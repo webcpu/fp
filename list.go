@@ -129,6 +129,65 @@ func ParallelMap(f interface{}, slice interface{}) interface{} {
 	return ys.Interface()
 }
 
+func MapThread(f interface{}, slices... interface{}) interface{} {
+	checkMapThreadArguments(f, slices)
+	return _MapThread(f, slices)
+}
+
+func _MapThread(f interface{}, slices []interface{}) interface{} {
+	fv := reflect.ValueOf(f)
+	minLength := reflect.ValueOf(slices[0]).Len()
+	for i := 1; i < len(slices); i++ {
+		length := reflect.ValueOf(slices[i]).Len()
+		if length < minLength {
+			minLength = length
+		}
+	}
+
+	results := reflect.MakeSlice(reflect.SliceOf(fv.Type().Out(0)), minLength, minLength)
+	for i := 0; i < minLength; i++ {
+		numIn := len(slices)
+		ins := make([]reflect.Value, numIn, numIn)
+		for j := 0; j < len(slices); j++ {
+			ins[j] = reflect.ValueOf(slices[j]).Index(i)
+		}
+		results.Index(i).Set(fv.Call(ins[:])[0])
+	}
+
+	return results.Interface()
+}
+
+func checkMapThreadArguments(f interface{}, slices []interface{}) {
+	fv := reflect.ValueOf(f)
+	mustBe(fv, reflect.Func)
+	if len(slices) == 0 {
+		msg := fmt.Sprintf("MapThread: MapThread called with %v arguments; at least 2 argument is expected.\", len(args))")
+		panic(msg)
+	}
+	elementTypes := []reflect.Type{}
+	for i := 0; i < len(slices); i++ {
+		sv := reflect.ValueOf(slices[i])
+		mustBeArraySlice(sv)
+		elementType := sv.Type().Elem()
+		fmt.Println(sv.Type().Elem().String())
+		elementTypes = append(elementTypes, elementType)
+	}
+
+	types := append(elementTypes, nil)
+	argumentsTypes := ""
+	for i := 0; i < len(elementTypes); i++ {
+		if i < len(elementTypes)-1 {
+			argumentsTypes = argumentsTypes + elementTypes[i].String() + " , "
+		} else {
+			argumentsTypes = argumentsTypes + elementTypes[i].String()
+		}
+	}
+	if !verifyFuncSignature(fv, 1, types...) {
+		msg := "MapThread : function signature must be func(" + argumentsTypes + ") OutputElementType"
+		panic(msg)
+	}
+}
+
 func Do(f interface{}, slice interface{}) {
 	sv := reflect.ValueOf(slice)
 	fv := reflect.ValueOf(f)
@@ -807,9 +866,7 @@ func _IntersectionBy(lists []interface{}, f interface{}) interface{} {
 	var elementType = reflect.ValueOf(lists[0]).Type().Elem()
 	fv := reflect.ValueOf(f)
 	results := intersectByFirstList(lists[0], elementType, fv)
-	fmt.Printf("first: %v\n", results.Interface())
 	results = intersectByRestLists(lists[:(len(lists)-1)], elementType, fv, results)
-	fmt.Printf("rest: %v\n", results.Interface())
 	return results.Interface()
 }
 

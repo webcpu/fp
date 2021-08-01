@@ -159,6 +159,41 @@ var _ = Describe("list", func() {
 		})
 	})
 
+	Context("MapThread(f, list...)", func() {
+		It("applies f to each element in expr.", func() {
+			add := func(x, y int) int {
+				return x + y
+			}
+			xs := Range(5)
+			ys := []int{5,4,3,2,1}
+			actual := MapThread(add, xs, ys)
+			expected := []int{6, 6, 6, 6, 6}
+			Expect(actual).To(Equal(expected))
+		})
+
+		It("applies f to each element in expr.", func() {
+			add := func(x, y int) int {
+				return x + y
+			}
+			xs := Range(5)
+			ys := []int{5,4,3,2,1,2}
+			actual := MapThread(add, xs, ys)
+			expected := []int{6, 6, 6, 6, 6}
+			Expect(actual).To(Equal(expected))
+		})
+
+		It("applies f to each element in expr.", func() {
+			add := func(x int, s string) string {
+				return strconv.Itoa(x) + s
+			}
+			xs := Range(5)
+			ys := []string{"a","b","c","d","e"}
+			actual := MapThread(add, xs, ys)
+			expected := []string{"1a","2b","3c","4d","5e"}
+			Expect(actual).To(Equal(expected))
+		})
+	})
+
 	Context("Do(f, expr)", func() {
 		It("applies f to each element in expr.", func() {
 			actual := make([]int, 5)
