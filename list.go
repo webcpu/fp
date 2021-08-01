@@ -753,47 +753,67 @@ func _Intersection(lists []interface{}) interface{} {
 	var elementType = reflect.ValueOf(lists[0]).Type().Elem()
 	mapType := reflect.MapOf(elementType, reflect.TypeOf(true))
 
-	m := reflect.MakeMap(mapType)
+	mapv := reflect.MakeMap(mapType)
 	keys := reflect.MakeSlice(reflect.SliceOf(elementType), 0, 0)
+
+	keys, mapv = intersectFirstList(lists[0], elementType, mapType, mapv, keys)
+	keys, mapv = intersectRestLists(lists[1:len(lists)], elementType, mapType, mapv, keys)
+	return keys.Interface()
+}
+
+func intersectFirstList(list interface{}, elementType reflect.Type, mapType reflect.Type, mapv reflect.Value, keys reflect.Value) (reflect.Value, reflect.Value) {
+	commonKeys := makeKeys([]interface{}{list}, elementType)
+	commonMap := reflect.MakeMap(mapType)
+	sv := reflect.ValueOf(list)
+	for j := 0; j < sv.Len(); j++ {
+		key := sv.Index(j)
+		value := mapv.MapIndex(key)
+		if !value.IsValid() || value.IsZero() {
+			commonMap.SetMapIndex(key, reflect.ValueOf(true))
+			commonKeys = reflect.Append(commonKeys, key)
+		}
+	}
+	return commonKeys, commonMap
+}
+
+func intersectRestLists(lists []interface{}, elementType reflect.Type, mapType reflect.Type, mapv reflect.Value, keys reflect.Value) (reflect.Value, reflect.Value) {
+	commonKeys := reflect.MakeSlice(reflect.SliceOf(elementType), 0, 0)
+	commonMap := reflect.MakeMap(mapType)
 	for i := 0; i < len(lists); i++ {
-		commonKeys := makeKeys([]interface{}{lists[i]}, elementType)
-		commonMap := reflect.MakeMap(mapType)
-		sv := reflect.ValueOf(lists[i])
-		for j := 0; j < sv.Len(); j++ {
-			key := sv.Index(j)
-			value := m.MapIndex(key)
-			if i == 0 {
-				if !value.IsValid() || value.IsZero() {
-					commonMap.SetMapIndex(key, reflect.ValueOf(true))
-					commonKeys = reflect.Append(commonKeys, key)
-				}
-			} else {
-				if value.IsValid() && value.Interface().(bool) {
-					v := commonMap.MapIndex(key)
-					if !v.IsValid() {
-						commonMap.SetMapIndex(key, reflect.ValueOf(true))
-						commonKeys = reflect.Append(commonKeys, key)
-					}
-				}
+		commonKeys, commonMap = intersectRestList(lists[i], elementType, mapType, mapv, keys)
+	}
+	return commonKeys, commonMap
+}
+
+func intersectRestList(list interface{}, elementType reflect.Type, mapType reflect.Type, mapv reflect.Value, keys reflect.Value) (reflect.Value, reflect.Value) {
+	sv := reflect.ValueOf(list)
+	commonKeys := makeKeys([]interface{}{list}, elementType)
+	commonMap := reflect.MakeMap(mapType)
+	for j := 0; j < sv.Len(); j++ {
+		key := sv.Index(j)
+		value := mapv.MapIndex(key)
+		if value.IsValid() && value.Interface().(bool) {
+			v := commonMap.MapIndex(key)
+			if !v.IsValid() {
+				commonMap.SetMapIndex(key, reflect.ValueOf(true))
+				commonKeys = reflect.Append(commonKeys, key)
 			}
 		}
-		m = commonMap
-		keys = commonKeys
 	}
-	return keys.Interface()
+	return commonKeys, commonMap
 }
 
 func _IntersectionBy(lists []interface{}, f interface{}) interface{} {
 	var elementType = reflect.ValueOf(lists[0]).Type().Elem()
 	fv := reflect.ValueOf(f)
-	results := intersectFirstList(lists[0], elementType, fv)
+	results := intersectByFirstList(lists[0], elementType, fv)
 	fmt.Printf("first: %v\n", results.Interface())
-	results = intersectRestLists(lists[:(len(lists)-1)], elementType, fv, results)
+	results = intersectByRestLists(lists[:(len(lists)-1)], elementType, fv, results)
 	fmt.Printf("rest: %v\n", results.Interface())
 	return results.Interface()
 }
 
-func intersectFirstList(list interface{}, elementType reflect.Type, fv reflect.Value) reflect.Value {
+func intersectByFirstList(list interface{}, elementType reflect.Type, fv reflect.Value) reflect.Value {
 	sv := reflect.ValueOf(list)
 	keys := reflect.MakeSlice(reflect.SliceOf(elementType), 0, 0)
 	for j := 0; j < sv.Len(); j++ {
@@ -808,7 +828,7 @@ func intersectFirstList(list interface{}, elementType reflect.Type, fv reflect.V
 	return keys
 }
 
-func intersectRestLists(lists []interface{}, elementType reflect.Type, fv reflect.Value, results reflect.Value) reflect.Value {
+func intersectByRestLists(lists []interface{}, elementType reflect.Type, fv reflect.Value, results reflect.Value) reflect.Value {
 	for i := 0; i < len(lists); i++ {
 		results = intersectList(lists, elementType, fv, results, i)
 	}
