@@ -967,3 +967,39 @@ func checkIntersectionListsArguments(lists []interface{}) reflect.Type {
 	}
 	return elementType
 }
+
+func Transpose(lists []interface{}) interface{} {
+	if len(lists) == 0 {
+		return lists
+	}
+	checkTransposeArguments(lists)
+	return _Transpose(lists)
+}
+
+func _Transpose(lists []interface{}) interface{} {
+	length := reflect.ValueOf(lists[0]).Len()
+	elementType := reflect.TypeOf([]interface{}{})
+	results := reflect.MakeSlice(elementType, length, length)
+	for i := 0; i < length; i++ {
+		list := make([]interface{}, len(lists), len(lists))
+		for j := 0; j < len(lists); j++ {
+			sv := reflect.ValueOf(lists[j])
+			list[j] = sv.Index(i).Interface()
+		}
+		results.Index(i).Set(reflect.ValueOf(list))
+	}
+	return results.Interface()
+}
+
+func checkTransposeArguments(lists []interface{}) {
+	mustBeArraySlice(reflect.ValueOf(lists[0]))
+	length := reflect.ValueOf(lists[0]).Len()
+	for i := 1; i < len(lists); i++ {
+		sv := reflect.ValueOf(lists[i])
+		mustBeArraySlice(sv)
+		if sv.Len() != length {
+			msg := "Transpose: %v can't be transposed. Each list should have the same length."
+			panic(msg)
+		}
+	}
+}

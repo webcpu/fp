@@ -824,4 +824,24 @@ var _ = Describe("list", func() {
 			Expect(actual).To(Equal(expected))
 		})
 	})
+
+	Context("Transpose(lists)", func() {
+		It("applies f to each element in expr.", func() {
+			xs := Range(5)
+			ys := []int{5, 4, 3, 2, 1}
+			xss := []interface{}{xs, ys}
+			actual := Transpose(xss)
+			var expected []interface{} = []interface{}{[]int{1,5}, []int{2,4}, []int{3,3}, []int{4,2},  []int{5,1}}
+			Expect(fmt.Sprintf("%v", actual)).To(Equal(fmt.Sprintf("%v", expected)))
+		})
+
+		It("applies f to each element in expr.", func() {
+			xs := Range(5)
+			ys := []string{"a", "b", "c", "d", "e"}
+			xss := []interface{}{xs, ys}
+			actual := Transpose(xss)
+			var expected []interface{} = []interface{}{[]interface{}{1,"a"}, []interface{}{2,"b"}, []interface{}{3,"c"}, []interface{}{4,"d"},  []interface{}{5,"e"}}
+			Expect(fmt.Sprintf("%v", actual)).To(Equal(fmt.Sprintf("%v", expected)))
+		})
+	})
 })
