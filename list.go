@@ -123,7 +123,7 @@ func ParallelMap(f interface{}, slice interface{}) interface{} {
 		ys.Index(i).Set(value)
 	}
 	for i := 0; i < sv.Len(); i++ {
-		worker(i)
+		go worker(i)
 	}
 	wg.Wait()
 	return ys.Interface()
@@ -224,7 +224,7 @@ func ParallelDo(f interface{}, slice interface{}) {
 		fv.Call(x)
 	}
 	for i := 0; i < sv.Len(); i++ {
-		worker(i)
+		go worker(i)
 	}
 	wg.Wait()
 }
