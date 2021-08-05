@@ -104,6 +104,8 @@ var _ = Describe("list", func() {
 			xs := Range(5)
 			actual := Map(add1, xs)
 			expected := []int{2, 3, 4, 5, 6}
+			_, ok := actual.([]int)
+			Expect(ok).To(BeTrue())
 			Expect(actual).To(Equal(expected))
 		})
 

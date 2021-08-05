@@ -117,3 +117,60 @@ func Composition(fs... interface{}) func(...interface{}) interface{} {
 func getFunctionName(i interface{}) string {
 	return runtime.FuncForPC(reflect.ValueOf(i).Pointer()).Name()
 }
+
+func Bind(fs ...interface{}) func(...interface{}) (interface{}, error) {
+	checkBindArguments(fs)
+	return func(args ...interface{}) (interface{}, error) {
+		var values []reflect.Value = make([]reflect.Value, len(args))
+		for i := 0; i < len(args); i++ {
+			values[i] = reflect.ValueOf(args[i])
+		}
+		for _, f := range fs {
+			fv := reflect.ValueOf(f)
+			outs := fv.Call(values)
+			values = outs[:(len(outs) - 1)]
+			err, ok := outs[len(outs)-1].Interface().(error)
+			if ok && err != nil {
+				return nil, err
+			}
+		}
+		outputs := make([]interface{}, len(values)-1)
+		for i := 0; i < len(outputs); i++ {
+			outputs[i] = values[i].Interface()
+		}
+		return values[0].Interface(), nil
+	}
+}
+
+func checkBindArguments(fs []interface{}) {
+	for i := 0; i < len(fs); i++ {
+		fv := reflect.ValueOf(fs[i])
+		mustBe(fv, reflect.Func)
+		if i > 0 {
+			checkFunctionArgumentNumber(fs, i, fv)
+		}
+
+		if i == len(fs)-1 {
+			checkFunctionOutputArguments(fv)
+		}
+	}
+}
+
+func checkFunctionOutputArguments(fv reflect.Value) {
+	if fv.Type().NumOut() != 2 {
+		panic("the output arguments of the last function should be (interface{}, error)")
+	}
+	errorInterface := reflect.TypeOf((*error)(nil)).Elem()
+	t := fv.Type().Out(1)
+	if !(t.Kind() == reflect.Interface && t.Implements(errorInterface)) {
+		panic("the output arguments of the last function should be (interface{}, error)")
+	}
+}
+
+func checkFunctionArgumentNumber(fs []interface{}, i int, fv reflect.Value) {
+	prev := reflect.ValueOf(fs[i-1])
+	if prev.Type().NumOut()-1 != fv.Type().NumIn() {
+		msg := fmt.Sprintf("argument #%v and argument %v doesn't match.", fs[i-1], fs[i])
+		panic(msg)
+	}
+}

@@ -4,6 +4,7 @@ import (
 	. "fp"
 	. "github.com/onsi/ginkgo"
 	. "github.com/onsi/gomega"
+	"strconv"
 )
 
 var _ = Describe("function", func() {
@@ -102,5 +103,33 @@ var _ = Describe("function", func() {
 			expected := []interface{}{1,2,3,4}
 			Expect(actual).To(Equal(expected))
 		})
+	})
+
+	Context("Bind(f, g, h...)", func() {
+		It("functions", func() {
+			f1 := func(a, b int) (int, int, error) {
+				return a, a + b, nil
+			}
+
+			f2 := func(n int) (string, error) {
+				return strconv.Itoa(n * n), nil
+			}
+
+			f3 := func(s string) (int, int, error) {
+				n, _ := strconv.Atoi(s)
+				return n, n * n, nil
+			}
+
+			f4 := func(a, b int) (int, error) {
+				return a + b, nil
+			}
+
+			f := Bind(f1, f1, f4, f2, f3, f4)
+			actual, err := f(1,2)
+			expected := 650
+			Expect(err).To(BeNil())
+			Expect(actual).To(Equal(expected))
+		})
+
 	})
 })
