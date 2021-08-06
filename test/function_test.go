@@ -131,5 +131,69 @@ var _ = Describe("function", func() {
 			Expect(actual).To(Equal(expected))
 		})
 
+
+		It("functions", func() {
+			f1 := func(start, end int) ([]int, error) {
+				return Range(start, end), nil
+			}
+
+			f2 := func(xs []int) ([]int, error) {
+				result := Map(func(x int) int {return x + 1}, xs)
+				return result.([]int), nil
+			}
+
+			f3 := func(xs []int) (int, error) {
+				result := Reduce(func(a,b int) int { return a + b}, 0, xs)
+				return result.(int), nil
+			}
+
+			f := Bind(f1, f2, f3)
+			actual, err := f(0, 9)
+			expected := 55
+			Expect(err).To(BeNil())
+			Expect(actual).To(Equal(expected))
+		})
+
+		It("lived", func() {
+			study := func(start, end int) ([]int, error) {
+				return Range(start, end), nil
+			}
+
+			work := func(xs []int) ([]int, error) {
+				result := Map(func(x int) int {return x + 1}, xs)
+				return result.([]int), nil
+			}
+
+			marry := func(xs []int) (int, error) {
+				result := Reduce(func(a,b int) int { return a + b}, 0, xs)
+				return result.(int), nil
+			}
+
+			raiseKids := func(x int) (int, error) {
+				result := x + 1
+				return result, nil
+			}
+
+			retire := func(x int) (int, error) {
+				result := x + 10
+				return result, nil
+			}
+
+			sick := func(x int) (int, error) {
+				result := x + 10
+				return result, nil
+			}
+
+			die := func(x int) (int, error) {
+				result := x + 1
+				return result, nil
+			}
+
+			f := Bind(study, work, marry, raiseKids, retire, sick, die)
+			actual, err := f(0, 9)
+			expected := 77
+			Expect(err).To(BeNil())
+			Expect(actual).To(Equal(expected))
+		})
 	})
 })
