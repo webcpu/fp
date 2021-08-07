@@ -33,7 +33,7 @@ func mustBeArraySlice(v reflect.Value) {
 	pc, _, _, ok := runtime.Caller(1)
 	details := runtime.FuncForPC(pc)
 	if ok && details != nil {
-		if !(v.Kind() == reflect.Array || v.Kind() == reflect.Slice)  {
+		if !(v.Kind() == reflect.Array || v.Kind() == reflect.Slice) {
 			panic(&reflect.ValueError{details.Name(), v.Kind()})
 		}
 	}
@@ -68,7 +68,7 @@ func panicTypeError(v reflect.Value) {
 
 func verifyFuncSignature(fv reflect.Value, numOut int, types ...reflect.Type) bool {
 	mustBe(fv, reflect.Func)
-	if (fv.Type().NumIn() != len(types) - numOut) || fv.Type().NumOut() != numOut {
+	if (fv.Type().NumIn() != len(types)-numOut) || fv.Type().NumOut() != numOut {
 		return false
 	}
 
@@ -129,7 +129,7 @@ func ParallelMap(f interface{}, slice interface{}) interface{} {
 	return ys.Interface()
 }
 
-func MapThread(f interface{}, slices... interface{}) interface{} {
+func MapThread(f interface{}, slices ...interface{}) interface{} {
 	checkMapThreadArguments(f, slices)
 	return _MapThread(f, slices)
 }
@@ -257,6 +257,7 @@ func Select(f interface{}, slice interface{}) interface{} {
 }
 
 var Reduce = Fold
+
 func Fold(f interface{}, initial interface{}, slice interface{}) interface{} {
 	sv := reflect.ValueOf(slice)
 	fv := reflect.ValueOf(f)
@@ -278,7 +279,7 @@ func Fold(f interface{}, initial interface{}, slice interface{}) interface{} {
 	return result.Interface()
 }
 
-func MapIndexed(f interface{}, slice interface{}) interface{}{
+func MapIndexed(f interface{}, slice interface{}) interface{} {
 	sv := reflect.ValueOf(slice)
 	fv := reflect.ValueOf(f)
 	mustBe(fv, reflect.Func)
@@ -287,7 +288,7 @@ func MapIndexed(f interface{}, slice interface{}) interface{}{
 	elementType := sv.Type().Elem()
 	mustBeFuncSignature(sv, fv, 1, elementType, reflect.ValueOf(0).Type(), nil)
 
-	var ins[2]reflect.Value
+	var ins [2]reflect.Value
 	ys := reflect.MakeSlice(reflect.SliceOf(fv.Type().Out(0)), sv.Len(), sv.Len())
 	for i := 0; i < sv.Len(); i++ {
 		ins[0] = sv.Index(i)
@@ -326,12 +327,12 @@ func _Range(imin, imax, step int) []int {
 
 	isInRange := func(min, max, step, i int) bool {
 		if step > 0 {
-			return imin + i*step <= imax
+			return imin+i*step <= imax
 		} else {
-			return imin + i*step >= imax
+			return imin+i*step >= imax
 		}
 	}
-	rs := make([]int, (imax-imin)/step + 1)
+	rs := make([]int, (imax-imin)/step+1)
 	for i := 0; isInRange(imax, imax, step, i); i++ {
 		rs[i] = imin + i*step
 	}
@@ -392,7 +393,7 @@ func Take(slice interface{}, n int) interface{} {
 	var ys = reflect.MakeSlice(reflect.SliceOf(elementType), end-start, end-start)
 
 	for i := start; i < end; i++ {
-		ys.Index(i-start).Set(sv.Index(i))
+		ys.Index(i - start).Set(sv.Index(i))
 	}
 	return ys.Interface()
 }
@@ -439,7 +440,7 @@ func Drop(slice interface{}, n int) interface{} {
 		if n > 0 {
 			return n, sv.Len()
 		} else {
-			return 0, sv.Len()+n
+			return 0, sv.Len() + n
 		}
 	}()
 
@@ -447,7 +448,7 @@ func Drop(slice interface{}, n int) interface{} {
 	var ys = reflect.MakeSlice(reflect.SliceOf(elementType), end-start, end-start)
 
 	for i := start; i < end; i++ {
-		ys.Index(i-start).Set(sv.Index(i))
+		ys.Index(i - start).Set(sv.Index(i))
 	}
 	return ys.Interface()
 }
@@ -534,7 +535,6 @@ func Reverse(expr interface{}) []interface{} {
 	}
 	return xs
 }
-
 
 func Less(a interface{}, b interface{}) bool {
 	return !Greater(a, b)
@@ -674,7 +674,7 @@ func Values(m interface{}) interface{} {
 	return xs.Interface()
 }
 
-func Union(lists... interface{}) interface{} {
+func Union(lists ...interface{}) interface{} {
 	if len(lists) == 0 {
 		return []interface{}{}
 	}
@@ -734,7 +734,7 @@ func makeKeys(lists []interface{}, elementType reflect.Type) reflect.Value {
 	return keys
 }
 
-func DeleteDuplicates(args... interface{}) interface{} {
+func DeleteDuplicates(args ...interface{}) interface{} {
 	checkDeleteDuplicatesArguments(args)
 
 	if len(args) == 1 {
@@ -794,7 +794,7 @@ func isDuplicate(elem reflect.Value, slice reflect.Value, fv reflect.Value) (ref
 	return result, found
 }
 
-func Intersection(args... interface{}) interface{} {
+func Intersection(args ...interface{}) interface{} {
 	if len(args) == 0 {
 		return []interface{}{}
 	}
@@ -941,7 +941,7 @@ func checkIntersectionArguments(args []interface{}) {
 func getListsArguments(args []interface{}) []interface{} {
 	fv := reflect.ValueOf(args[len(args)-1])
 	if fv.Kind() == reflect.Func {
-		return args[:(len(args)-1)]
+		return args[:(len(args) - 1)]
 	} else {
 		return args
 	}
