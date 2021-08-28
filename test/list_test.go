@@ -848,14 +848,14 @@ var _ = Describe("list", func() {
 			xs := []int{1, 2}
 			ys := []int{2, 3}
 			actual := Complement(xs, ys)
-			expected := []int{3}
+			expected := []int{1}
 			Expect(actual).To(Equal(expected))
 		})
 		It("[]int", func() {
 			xs := []int{1, 2}
 			ys := []int{2, 3}
 			actual := Complement(ys, xs)
-			expected := []int{1}
+			expected := []int{3}
 			Expect(actual).To(Equal(expected))
 		})
 	})

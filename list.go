@@ -989,10 +989,10 @@ func Complement(list1 interface{}, list2 interface{}) interface{} {
 		mapv2.SetMapIndex(sv2.Index(i), reflect.ValueOf(true))
 	}
 
-	keys := mapv2.MapKeys()
+	keys := mapv1.MapKeys()
 	result := reflect.MakeSlice(reflect.SliceOf(elementType), 0, 0)
 	for _, key := range keys {
-		v := mapv1.MapIndex(key) //.Convert(elementType))
+		v := mapv2.MapIndex(key) //.Convert(elementType))
 		fmt.Printf("%v\n", v)
 
 		if !v.IsValid() {
