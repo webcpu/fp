@@ -283,6 +283,22 @@ var _ = Describe("list", func() {
 			expected := []string{"DEF"}
 			Expect(actual).To(Equal(expected))
 		})
+
+		It("picks out all elements of list for which crit(e) is true.", func() {
+			type Person struct {
+				name string
+				age int
+			}
+			person1 := Person{name:"b1", age: 10}
+			person2 := Person{name:"b1", age: 15}
+			xs := []Person{person1, person2}
+			isAbove12 := func(x Person) bool {
+				return x.age > 12
+			}
+			actual := Filter(isAbove12, xs)
+			expected := []Person{person2}
+			Expect(actual).To(Equal(expected))
+		})
 	})
 
 	Context("Fold(f, r, expr)", func() {
@@ -823,6 +839,23 @@ var _ = Describe("list", func() {
 			f := func(x int, y int) bool { return Abs(x-y) == 1}
 			actual := Intersection(xs, ys, f)
 			expected := []int{2}
+			Expect(actual).To(Equal(expected))
+		})
+	})
+
+	Context("Complement(list1, list2)", func() {
+		It("[]int", func() {
+			xs := []int{1, 2}
+			ys := []int{2, 3}
+			actual := Complement(xs, ys)
+			expected := []int{3}
+			Expect(actual).To(Equal(expected))
+		})
+		It("[]int", func() {
+			xs := []int{1, 2}
+			ys := []int{2, 3}
+			actual := Complement(ys, xs)
+			expected := []int{1}
 			Expect(actual).To(Equal(expected))
 		})
 	})

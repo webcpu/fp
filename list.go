@@ -161,7 +161,7 @@ func checkMapThreadArguments(f interface{}, slices []interface{}) {
 	fv := reflect.ValueOf(f)
 	mustBe(fv, reflect.Func)
 	if len(slices) == 0 {
-		msg := fmt.Sprintf("MapThread: MapThread called with %v arguments; at least 2 argument is expected.\", len(args))")
+		msg := fmt.Sprintf("MapThread: MapThread called with %v elements array/slice; 2 elements array/slice is expected.", len(slices))
 		panic(msg)
 	}
 	elementTypes := []reflect.Type{}
@@ -229,9 +229,7 @@ func ParallelDo(f interface{}, slice interface{}) {
 	wg.Wait()
 }
 
-var Filter = Select
-
-func Select(f interface{}, slice interface{}) interface{} {
+func Filter(f interface{}, slice interface{}) interface{} {
 	sv := reflect.ValueOf(slice)
 	fv := reflect.ValueOf(f)
 	mustBe(fv, reflect.Func)
@@ -966,6 +964,42 @@ func checkIntersectionListsArguments(lists []interface{}) reflect.Type {
 		}
 	}
 	return elementType
+}
+
+func Complement(list1 interface{}, list2 interface{}) interface{} {
+	sv1 := reflect.ValueOf(list1)
+	sv2 := reflect.ValueOf(list2)
+	mustBeArraySlice(sv1)
+	mustBeArraySlice(sv2)
+	if sv1.Type().Elem() != sv1.Type().Elem() {
+		msg := fmt.Sprintf("Complement: %v's type should as same as %v's type.", list1, list2)
+		panic(msg)
+	}
+	elementType := sv1.Type().Elem()
+
+	mapType := reflect.MapOf(elementType, reflect.TypeOf(true))
+
+	mapv1 := reflect.MakeMap(mapType)
+	mapv2 := reflect.MakeMap(mapType)
+
+	for i := 0; i < sv1.Len(); i++ {
+		mapv1.SetMapIndex(sv1.Index(i), reflect.ValueOf(true))
+	}
+	for i := 0; i < sv2.Len(); i++ {
+		mapv2.SetMapIndex(sv2.Index(i), reflect.ValueOf(true))
+	}
+
+	keys := mapv2.MapKeys()
+	result := reflect.MakeSlice(reflect.SliceOf(elementType), 0, 0)
+	for _, key := range keys {
+		v := mapv1.MapIndex(key) //.Convert(elementType))
+		fmt.Printf("%v\n", v)
+
+		if !v.IsValid() {
+			result = reflect.Append(result, key)
+		}
+	}
+	return result.Interface()
 }
 
 func Transpose(lists []interface{}) interface{} {
